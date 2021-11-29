@@ -6,7 +6,7 @@
 	transition: font 0.3s;
 	font: 10px Arial;
 }
-.skew-t .mainsvg {
+.skew-t .skew-svg {
 	background-color: transparent;
 }
 .skew-t .controls {
