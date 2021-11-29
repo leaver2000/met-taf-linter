@@ -9,12 +9,12 @@
 .skew-t .skew-svg {
 	background-color: transparent;
 }
-.skew-t .controls {
+/* .skew-t .controls {
 	box-sizing: border-box;
 	width: 100%;
 	display: flex;
-}
-.skew-t .controls .buttons,
+} */
+/* .skew-t .controls .buttons,
 .skew-t .range-container .buttons,
 .skew-t .range-container-extra .buttons {
 	flex-grow: 1;
@@ -24,13 +24,13 @@
 	text-align: center;
 	cursor: pointer;
 	background-color: #dcdcdc;
-}
-.skew-t .controls .buttons.clicked,
+} */
+/* .skew-t .controls .buttons.clicked,
 .skew-t .range-container .buttons.clicked,
 .skew-t .range-container-extra .buttons.clicked {
 	background-color: #969696;
 	color: white;
-}
+} */
 .skew-t .controls .buttons.units,
 .skew-t .range-container .buttons.units,
 .skew-t .range-container-extra .buttons.units {
@@ -136,92 +136,96 @@
 	stroke-width: 1px;
 }
 .skew-t .gridline {
-	stroke-width: 0.5px;
+	stroke-width: 1px;
 	stroke-opacity: 0.3;
-	fill: none;
+	fill: black;
 }
 .skew-t .gridline.highlight-line {
 	stroke-opacity: 1;
 	stroke-width: 1px;
 }
-.skew-t .tempzero {
-	stroke-width: 0.5px;
-	stroke-opacity: 0.3;
-	fill: none;
-	stroke: #aaa;
-	stroke-width: 1.25px;
-}
-.skew-t .tempzero.highlight-line {
+/* INUSE */
+/* .skew-t .isothem-zero.highlight-line {
 	stroke-opacity: 1;
 	stroke-width: 1px;
+} */
+/* .skew-t .dryadiabat.highlight-line {
+    stroke-opacity: 1;
+    stroke-width: 1px;
+} */
+/* .skew-t .isotherm.highlight-line {
+    stroke-opacity: 1;
+    stroke-width: 1px;
+} */
+/* .skew-t .isobars.highlight-line {
+    stroke-opacity: 1;
+    stroke-width: 1px;
+} */
+/* .skew-t .moistadiabat.highlight-line {
+    stroke-opacity: 1;
+    stroke-width: 1px;
+} */
+/* .skew-t .isohume.highlight-line {
+    stroke-opacity: 1;
+    stroke-width: 1px;
+} */
+.skew-t .isotherm-line.zero {
+    stroke-width: 1px;
+    stroke-opacity: 1;
+    fill: none;
+    stroke: blue;
+    stroke-width: 1.25px;
 }
-.skew-t .dryadiabat {
-	stroke-width: 0.5px;
-	stroke-opacity: 0.3;
-	fill: none;
+.skew-t .isotherm-line {
+    stroke-width: 1px;
+    stroke-opacity: 1;
+    fill: none;
+    stroke: red;
+}
+.skew-t .isobar-line {
+    stroke-width: 1px;
+    stroke-opacity: 1; /* 0.3; */
+    fill: none;
+    stroke: rgba(120, 120, 120);
+}
+/* ENV LAPSE RATE */
+.skew-t .elr-line {
+    stroke-width: 1px;
+    stroke-opacity: 0.3;
+    fill: none;
+    stroke: purple;
+    stroke-opacity: 1;
+    stroke-width: 3px;
+}
+/* DRY ADIABTIC LAPSE RATE */
+.skew-t .dalr-line {
+	stroke-width: 1px;
+	stroke-opacity: 1;
+	fill:none;
 	stroke: green;
 }
-.skew-t .dryadiabat.highlight-line {
-	stroke-opacity: 1;
+/* MOIST ADIABTIC LAPSE RATE  */
+.skew-t .malr-line {
 	stroke-width: 1px;
-}
-.skew-t .templine {
-	stroke-width: 0.5px;
-	stroke-opacity: 0.3;
-	fill: none;
-	stroke: red;
-}
-.skew-t .templine.highlight-line {
 	stroke-opacity: 1;
-	stroke-width: 1px;
-}
-.skew-t .pressure {
-	stroke-width: 0.5px;
-	stroke-opacity: 0.3;
-	fill: none;
-	stroke: rgba(120, 120, 120);
-}
-.skew-t .pressure.highlight-line {
-	stroke-opacity: 1;
-	stroke-width: 1px;
-}
-.skew-t .moistadiabat {
-	stroke-width: 0.5px;
-	stroke-opacity: 0.3;
-	fill: none;
-	stroke: green;
+	fill: black;
+	stroke: orange;
 	stroke-dasharray: 5;
 }
-.skew-t .moistadiabat.highlight-line {
-	stroke-opacity: 1;
+.skew-t .isohume-line {
 	stroke-width: 1px;
-}
-.skew-t .isohume {
-	stroke-width: 0.5px;
-	stroke-opacity: 0.3;
+	stroke-opacity: 1;
 	fill: none;
 	stroke: blue;
 	stroke-dasharray: 2;
 }
-.skew-t .isohume.highlight-line {
-	stroke-opacity: 1;
-	stroke-width: 1px;
-}
-.skew-t .elr {
-	stroke-width: 0.5px;
-	stroke-opacity: 0.3;
-	fill: none;
-	stroke: purple;
-	stroke-opacity: 0.03;
-	stroke-width: 3px;
-}
-.skew-t .elr.highlight-line {
+/* .skew-t .elr.highlight-line {
 	stroke-opacity: 1;
 	stroke-width: 1px;
 }
 .skew-t .elr.highlight-line {
 	stroke-opacity: 0.7;
-}
+} */
 .skew-t .sigline {
 	stroke-width: 0.5px;
 	stroke-opacity: 0.3;
@@ -268,7 +272,7 @@
 	font-size: 14px;
 }
 .skew-t .skewt-wind-arrow {
-	alignment-baseline: middle;
+	/* alignment-baseline: middle; */
 	text-anchor: middle;
 	fill: black;
 	font-size: 16px;
