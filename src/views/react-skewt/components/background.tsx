@@ -59,6 +59,7 @@ export default function Background({ data, ...props }) {
 	console.log(props);
 	return <g className='skew-background' ref={ref} {...props} />;
 }
+console.log(document);
 export function Isohume() {
 	const {
 		ref,

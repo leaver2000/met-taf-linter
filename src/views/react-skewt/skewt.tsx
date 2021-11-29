@@ -17,9 +17,9 @@ function SkewMain() {
 	const {
 		state: { data, ...state },
 	} = useController();
-
 	return (
 		<>
+			{/* <JSONTree hideRoot data={document} /> */}
 			<JSONTree hideRoot data={state._styles} />
 			<JSONTree hideRoot data={state} />
 			<Main data={data}>
