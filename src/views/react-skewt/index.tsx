@@ -1,18 +1,12 @@
+// import { useState, useCallback } from 'react'
 import Skewt from './skewt';
-import { sounding } from './data/sounding';
+// import { sounding } from './data/sounding';
 import './css/skewt.css';
 
-export default function SkewtLab(props: any) {
-	return (
-		<Skewt
-			data={sounding}
-			options={{
-				onEvent: {
-					click: (e) => void 0,
-					focus: (e) => void 0,
-					hover: (e) => void 0,
-				},
-			}}
-		/>
-	);
+
+export default function SkewtLab() {
+    // const [styles, setStyles] = useState('light')
+    // const options
+    // const handleSetStyle = useCallback(() => styles, [styles])
+    return (<Skewt />);
 }

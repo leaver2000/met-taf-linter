@@ -1,126 +1,9 @@
-.skew-t {
+ .skew-t {
 	position: relative;
 	padding: 0px;
 }
-.skew-t .fnt {
-	transition: font 0.3s;
-	font: 10px Arial;
-}
-.skew-t .skew-svg {
-	background-color: transparent;
-}
-/* .skew-t .controls {
-	box-sizing: border-box;
-	width: 100%;
-	display: flex;
-} */
-/* .skew-t .controls .buttons,
-.skew-t .range-container .buttons,
-.skew-t .range-container-extra .buttons {
-	flex-grow: 1;
-	margin: 3px;
-	padding: 3px;
-	border-radius: 10px;
-	text-align: center;
-	cursor: pointer;
-	background-color: #dcdcdc;
-} */
-/* .skew-t .controls .buttons.clicked,
-.skew-t .range-container .buttons.clicked,
-.skew-t .range-container-extra .buttons.clicked {
-	background-color: #969696;
-	color: white;
-} */
-.skew-t .controls .buttons.units,
-.skew-t .range-container .buttons.units,
-.skew-t .range-container-extra .buttons.units {
-	flex-grow: 0;
-	width: 80px;
-}
-.skew-t .controls .buttons.noclick,
-.skew-t .range-container .buttons.noclick,
-.skew-t .range-container-extra .buttons.noclick {
-	cursor: initial;
-}
-.skew-t .controls .values {
-	flex-grow: 1;
-	margin: 3px;
-	padding: 3px;
-	text-align: center;
-	border-radius: 10px;
-	border: 1px solid #dcdcdc;
-	min-width: 40px;
-}
-.skew-t .axis path,
-.skew-t .axis line {
-	fill: none;
-	stroke: red;
-	stroke-width: 10px;
-	shape-rendering: crispEdges;
-}
-.skew-t .axis {
-	fill: #000;
-}
-.skew-t .y.axis {
-	font-size: 10px;
-}
-.skew-t .y.axis.hght {
-	font-size: 10px;
-	fill: red;
-}
-.skew-t .x.axis {
-	font-size: 10px;
-}
-.skew-t .y.axis.ticks text {
-	display: none;
-}
-.skew-t .y.axis.hght-ticks text {
-	display: none;
-}
-.skew-t .y.axis.hght-ticks line {
-	stroke: red;
-}
-.skew-t .skewt-line {
-	fill: none;
-	stroke-width: 1.5px;
-	stroke-opacity: 0.5;
-}
-.skew-t .skewt-line.highlight-line {
-	stroke-opacity: 1;
-	stroke-width: 2px;
-}
-.skew-t .temp {
-	fill: none;
-	stroke-width: 1.5px;
-	stroke-opacity: 0.5;
-	stroke: red;
-}
-.skew-t .temp.highlight-line {
-	stroke-opacity: 1;
-	stroke-width: 2px;
-}
-.skew-t .dwpt {
-	fill: none;
-	stroke-width: 1.5px;
-	stroke-opacity: 0.5;
-	stroke: blue;
-}
-.skew-t .dwpt.highlight-line {
-	stroke-opacity: 1;
-	stroke-width: 2px;
-}
-.skew-t .parcel {
-	fill: none;
-	stroke-width: 1.5px;
-	stroke-opacity: 0.5;
-	stroke: green;
-	stroke-opacity: 0.3;
-}
-.skew-t .parcel.highlight-line {
-	stroke-opacity: 1;
-	stroke-width: 2px;
-}
-.skew-t .cond-level {
+
+/* .skew-t .cond-level {
 	fill: none;
 	stroke-width: 1.5px;
 	stroke-opacity: 0.5;
@@ -134,66 +17,43 @@
 }
 .skew-t .cond-level.highlight-line {
 	stroke-width: 1px;
-}
+} */
 .skew-t .gridline {
-	stroke-width: 1px;
-	stroke-opacity: 0.3;
-	fill: black;
-}
-.skew-t .gridline.highlight-line {
+	stroke-width: 10px;
 	stroke-opacity: 1;
-	stroke-width: 1px;
+	stroke: red;
 }
-/* INUSE */
-/* .skew-t .isothem-zero.highlight-line {
-	stroke-opacity: 1;
-	stroke-width: 1px;
-} */
-/* .skew-t .dryadiabat.highlight-line {
-    stroke-opacity: 1;
-    stroke-width: 1px;
-} */
-/* .skew-t .isotherm.highlight-line {
-    stroke-opacity: 1;
-    stroke-width: 1px;
-} */
-/* .skew-t .isobars.highlight-line {
-    stroke-opacity: 1;
-    stroke-width: 1px;
-} */
-/* .skew-t .moistadiabat.highlight-line {
-    stroke-opacity: 1;
-    stroke-width: 1px;
-} */
-/* .skew-t .isohume.highlight-line {
-    stroke-opacity: 1;
-    stroke-width: 1px;
-} */
 .skew-t .isotherm-line.zero {
     stroke-width: 1px;
     stroke-opacity: 1;
     fill: none;
-    stroke: blue;
+    /* stroke: blue; */
     stroke-width: 1.25px;
 }
 .skew-t .isotherm-line {
     stroke-width: 1px;
     stroke-opacity: 1;
     fill: none;
-    stroke: red;
+    /* stroke: red; */
 }
-.skew-t .isobar-line {
+.skew-t .isobar-line .light {
     stroke-width: 1px;
     stroke-opacity: 1; /* 0.3; */
     fill: none;
-    stroke: rgba(120, 120, 120);
+    
+    
 }
+
+/* .skew-t .isobar-line.dark{stroke:black}
+.skew-t .isobar-line.light{stroke:red} */
+
+/* stroke: rgba(120, 120, 120); */
 /* ENV LAPSE RATE */
 .skew-t .elr-line {
     stroke-width: 1px;
     stroke-opacity: 0.3;
     fill: none;
-    stroke: purple;
+    /* stroke: purple; */
     stroke-opacity: 1;
     stroke-width: 3px;
 }
@@ -202,21 +62,21 @@
 	stroke-width: 1px;
 	stroke-opacity: 1;
 	fill:none;
-	stroke: green;
+	/* stroke: green; */
 }
 /* MOIST ADIABTIC LAPSE RATE  */
 .skew-t .malr-line {
 	stroke-width: 1px;
 	stroke-opacity: 1;
-	fill: black;
-	stroke: orange;
+	/* fill: black; */
+	/* stroke: orange; */
 	stroke-dasharray: 5;
 }
 .skew-t .isohume-line {
 	stroke-width: 1px;
 	stroke-opacity: 1;
 	fill: none;
-	stroke: blue;
+	/* stroke: blue; */
 	stroke-dasharray: 2;
 }
 /* .skew-t .elr.highlight-line {
