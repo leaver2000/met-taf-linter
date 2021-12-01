@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import * as atm from './atmosphere';
+import * as atm from '../components/atmosphere';
 export const pAt11km = atm.pressureFromElevation(11000);
 
 const K0 = 273.15;
@@ -68,23 +68,3 @@ export function isohumeLineGenerator({ x, y }, { log, base }, tangent) {
 			return y(log[i]);
 		});
 }
-// export class LineGenerator {
-//     constructor({x,y,tangent}){
-//         super({x,y,tangent})
-
-//     }
-//     isohume(){
-//         const {log}=this
-//         var mixingRatio;
-//         var temp
-//         return d3.line()
-//             .curve(d3.curveLinear)
-//             .x(function (d, i) {
-//                 //console.log(d);
-//                 if (i === 0) mixingRatio = atm.mixingRatio(atm.saturationVaporPressure(d + K0), log[i]);
-//                 temp = atm.dewpoint(atm.vaporPressure(log[i], mixingRatio));
-//                 return x(temp - K0) + (y(base) - y(log[i])) / tangent;
-//             })
-//             .y(function (d, i) { return y(log[i]) });
-//     }
-// }
