@@ -1,12 +1,15 @@
 import { useCallback, useEffect } from 'react';
+import JSONTree from 'react-json-tree';
 import { useD3 } from '../hooks/use-skewt';
 export default function SkewMain({ data, gradient = 45, ...props }) {
 	// ?
 	const {
 		ref,
+		draw,
 		state: {
 			options: { fill },
 			_loadState: { initialized, loaded, sized },
+			...state
 		},
 		initializeVariables,
 		resize,
@@ -52,6 +55,10 @@ export default function SkewMain({ data, gradient = 45, ...props }) {
 	};
 	return (
 		<div style={styles}>
+			state:
+			<JSONTree hideRoot data={state} />
+			draw:
+			<JSONTree hideRoot data={draw} />
 			<div ref={ref} className='skew-t' {...(initialized ? props : [null])} />;
 		</div>
 	);

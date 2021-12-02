@@ -1,16 +1,22 @@
 import { useEffect } from 'react';
 import { useD3 } from '../hooks/use-skewt';
-// import * as d3 from 'd3';
-// import { useDraw } from '../hooks/use-draw';
 
 export default function Diagram({ ...props }) {
-    //P = pressure | T =temperature
-    const { ref, state, draw } = useD3('diagram', (bgRef) => draw('background', bgRef), []);
-    // const draw = useDraw(state);
-    useEffect(() => {
-        if (!!state.parameters) {
-        }
-    }, [state.parameters]);
+	//P = pressure | T =temperature
+	const { ref, state, draw } = useD3(
+		'diagram',
+		(d3Ref) => {
+			draw.all('background', d3Ref);
+			// draw.all('background', bgRef);
+		},
+		[]
+	);
+	// const draw = useDraw(state);
+	useEffect(() => {
+		if (!!state.parameters) {
+		}
+	}, [state.parameters]);
+	// console.log(draw);
 
-    return <g className='skew-background' ref={ref} {...props} />;
+	return <g className='layer-one' ref={ref} {...props} />;
 }
