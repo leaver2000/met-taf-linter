@@ -35,7 +35,7 @@ type SkewOptions = {
 export type SkewCTX = {
 	options: SkewOptions;
 	data: { press: number; hght: number; temp: number; dwpt: number; wdir: number; wspd: number }[];
-	P: { base: number; increment: number; top: number; at11km: number; log: number[]; ticks: number[]; lines: number[] };
+	P: { base: number; increment: number; top: number; at11km: number; log: number[]; ticks: number[] };
 	T: { mid: number; range: number; skew: number[] };
 	lineGen: { elr: d3.Line<[number, number]>; dalr: d3.Line<[number, number]>; malr: d3.Line<[number, number]>; isohume: d3.Line<[number, number]> };
 	parameters: { [key: string]: d3.Selection<SVGElement, {}, HTMLElement, any> };
@@ -91,10 +91,6 @@ export function useD3(refKey: string, render: (element: d3.Selection<any, unknow
 			setState(({ _loadState, scales, _styles, ...oldState }) => {
 				scales = { ...scales, x, y };
 
-				// // const elr =
-				// const dalr = dalrLineGenerator(scales, P);
-				// const malr = malrLineGenerator(scales, P, false);
-				// // const isohume = isohumeLineGenerator(scales, P);
 				const lineGen = {
 					elr: elrLineGenerator(scales, P),
 					dalr: dalrLineGenerator(scales, P),
