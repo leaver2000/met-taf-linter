@@ -48,10 +48,7 @@ const makeIntialState = () => {
         T: {
             mid,
             range,
-            skew: d3
-                .scaleLinear()
-                .domain([mid - range * 3, mid + range])
-                .ticks(24),
+            skew: d3.scaleLinear().domain([mid - range * 3, mid + range]).ticks(24),
         },
         P: {
             at11km: pressureFromElevation(11000),

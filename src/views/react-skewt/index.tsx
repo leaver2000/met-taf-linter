@@ -7,7 +7,7 @@ import JSONTree from 'react-json-tree';
 
 export default function Skewt() {
 
-    const [options, setOptions] = useState({ gradient: 45, palette: palette1 })
+    const [options, setOptions] = useState({ gradient: 80, palette: palette1 })
 
 
     const onEvent = useMemo(
@@ -34,7 +34,7 @@ const palette2 = {
     temperature: {
         stroke: '#66d9ef',//blue
         opacity: 1,
-        fill: 'none',
+        fill: 'black',
     },
     dewpoint: {
         stroke: '#a6e22e',//lime
@@ -44,7 +44,7 @@ const palette2 = {
     isobars: {
         stroke: '#f92672',//red
         opacity: 0.3,
-        fill: 'none',
+        fill: 'black',
     },
     isotherms: {
         stroke: '#f92672',//red
@@ -64,7 +64,7 @@ const palette2 = {
     dryAdiabats: {
         stroke: '#fd971f',//orange
         opacity: 0.3,
-        fill: 'none',
+        fill: 'black',
     },
     moistAdiabats: {
         stroke: '#a6e22e',//lime
