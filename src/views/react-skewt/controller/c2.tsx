@@ -1,6 +1,6 @@
 import { useState, createContext, useContext } from 'react';
 import * as d3 from 'd3';
-import { DEG2RAD, pressureFromElevation } from '../util/atmosphere';
+import { DEG2RAD, pressureFromElevation } from '../hooks/atmosphere';
 
 function useC2() {
     const [state, setState] = useState(() => makeIntialState());
@@ -19,6 +19,7 @@ export function Command(props) {
 }
 
 const makeIntialState = () => {
+
     var altticks: number[] = [];
     for (let i = 0; i < 20000; i += 10000 / 3.28084) altticks.push(pressureFromElevation(i));
     //*pressure
@@ -54,7 +55,6 @@ const makeIntialState = () => {
         },
         P: {
             at11km: pressureFromElevation(11000),
-            // ticks: d3.range(base, top - 50, -25),
             log: d3.range(base, top - 50, increment),
             lines: d3.range(base, top - 50, increment),
             increment,

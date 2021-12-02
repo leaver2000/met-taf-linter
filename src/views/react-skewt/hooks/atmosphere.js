@@ -1,5 +1,5 @@
 import * as math from "./math.js";
-
+export const DEG2RAD = Math.PI / 180;
 // Gas constant for dry air at the surface of the Earth
 const Rd = 287;
 // Specific heat at constant pressure for dry air
