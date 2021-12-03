@@ -6,7 +6,7 @@ export function Diagram({ ...props }) {
 			options: { palette },
 		},
 		draw,
-	} = useD3('diagram', (d3Ref) => draw.background(d3Ref), []); //
+	} = useD3('Diagram', (d3Ref) => draw.background(d3Ref), []); //
 
 	return <g fill={palette.foreground} ref={ref} {...props} />;
 }
@@ -18,7 +18,7 @@ export function Sounding({ ...props }) {
 			options: { palette },
 		},
 		draw,
-	} = useD3('diagram', (d3Ref) => draw.sounding(d3Ref), []); //
+	} = useD3('Sounding', (d3Ref) => draw.sounding(d3Ref), []); //
 
 	return <g fill={palette.foreground} ref={ref} {...props} />;
 }

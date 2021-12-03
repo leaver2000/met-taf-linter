@@ -1,131 +1,60 @@
-import { useMemo, useState } from 'react';
 import SkewtLab from './skewt-lab';
-import { sounding } from './data/sounding';
-import JSONTree from 'react-json-tree';
+// import { sounding } from './data/sounding';
+import { ONEVENT, PALETTE } from './util';
+interface SKEWT {
+	data: SkewTData;
+	options: {
+		palette?: LineTypes;
+		gradient?: number;
+		onEvent?: {
+			click: (e) => void;
+			hover: (e) => void;
+		};
+	};
+}
+/**
+ * ### react-skewt
+ * 
+ * 
+ `data parameter`
+ ```
+ type data = {
+    press: number;
+    hght: number;
+    temp: number;
+    dwpt: number;
+    wdir: number;
+    wspd: number;
+}[]
+```
 
-export default function Skewt() {
-	const [options, setOptions] = useState({ gradient: 80, palette: palette1 });
+ `options parameter`
 
-	const onEvent = useMemo(
-		() => ({
-			click: (e) => {
-				console.log(e);
-			},
-			focus: (e) => {},
-			hover: (e) => {
-				console.log(e);
-			},
-		}),
-		[]
-	);
-
-	return (
-		<>
-			<JSONTree hideRoot data={{ ...options, onEvent }} />
-			<button onClick={() => setOptions(({ palette, ...options }) => ({ ...options, palette: palette1 }))}>toggle palette-one</button>
-			<button onClick={() => setOptions(({ palette, ...options }) => ({ ...options, palette: palette2 }))}>toggle palette-two</button>
-			<SkewtLab data={sounding} options={{ ...options, onEvent }} />
-		</>
-	);
+ ```
+ type options = {
+    palette:{};
+    onEvent:{
+       click:(e)=>{...}
+       hover:(e)=>{...}
+	}
+    gradient: number;
 }
 
-const palette2 = {
-	temperature: {
-		stroke: '#66d9ef', //blue
-		opacity: 1,
-		fill: 'black',
-	},
-	dewpoint: {
-		stroke: '#a6e22e', //lime
-		opacity: 1,
-		fill: 'none',
-	},
-	isobars: {
-		stroke: '#f92672', //red
-		opacity: 0.3,
-		fill: 'black',
-	},
-	isotherms: {
-		stroke: '#f92672', //red
-		opacity: 0.3,
-		fill: 'none',
-	},
-	elr: {
-		stroke: '#ae81ff', //purple
-		opacity: 0.7,
-		fill: 'none',
-	},
-	isohumes: {
-		stroke: 'purple',
-		opacity: 0.3,
-		fill: 'none',
-	},
-	dryAdiabats: {
-		stroke: '#fd971f', //orange
-		opacity: 0.3,
-		fill: 'black',
-	},
-	moistAdiabats: {
-		stroke: '#a6e22e', //lime
-		opacity: 0.3,
-		fill: 'none',
-	},
-	grid: {
-		stroke: 'black',
-		opacity: 1,
-		fill: 'none',
-	},
-	background: 'black', //dark grey
-	foreground: '#272822', //light grey
+```
+
+ */
+const Skewt = ({ data, options: { palette, gradient, onEvent } }: SKEWT) => {
+	return (
+		<SkewtLab
+			//
+			data={data}
+			options={{
+				palette: !!palette ? palette : PALETTE,
+				gradient: !!gradient ? gradient : -45,
+				onEvent: !!onEvent ? onEvent : ONEVENT,
+			}}
+		/>
+	);
 };
 
-const palette1 = {
-	temperature: {
-		stroke: 'red',
-		opacity: 1,
-		fill: 'none',
-	},
-	dewpoint: {
-		stroke: 'green',
-		opacity: 1,
-		fill: 'none',
-	},
-	isobars: {
-		stroke: 'black',
-		opacity: 0.3,
-		fill: 'none',
-	},
-	isotherms: {
-		stroke: 'red',
-		opacity: 0.3,
-		fill: 'none',
-	},
-	elr: {
-		stroke: 'purple',
-		opacity: 0.3,
-		fill: 'none',
-	},
-	isohumes: {
-		stroke: 'purple',
-		opacity: 0.3,
-		fill: 'none',
-	},
-	dryAdiabats: {
-		stroke: 'orange',
-		opacity: 0.3,
-		fill: 'none',
-	},
-	moistAdiabats: {
-		stroke: 'green',
-		opacity: 0.3,
-		fill: 'none',
-	},
-	grid: {
-		stroke: 'black',
-		opacity: 1,
-		fill: 'none',
-	},
-
-	background: 'grey', //dark grey
-	foreground: 'white', //light grey
-};
+export default Skewt;

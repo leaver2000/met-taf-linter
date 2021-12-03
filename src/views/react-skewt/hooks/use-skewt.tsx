@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
-import { elrLineGenerator, dalrLineGenerator, malrLineGenerator, isohumeLineGenerator, dewptLineGenerator, tempLineGenerator } from './line-generators';
+import LineGenerators from './line-generators';
 import { useDraw } from './use-draw';
 import { useC2 } from '../controller/c2';
 
@@ -80,14 +80,15 @@ export function useD3(refKey: string, render: (element: d3.Selection<any, unknow
 
 			setState(({ _loadState, scales, mainDims, ...oldState }) => {
 				scales = { ...scales, x, y };
+				const lg = new LineGenerators(scales, P);
 
 				const lineGen = {
-					temp: tempLineGenerator(scales, P),
-					dewpt: dewptLineGenerator(scales, P),
-					elr: elrLineGenerator(scales, P),
-					dalr: dalrLineGenerator(scales, P),
-					malr: malrLineGenerator(scales, P, false),
-					isohume: isohumeLineGenerator(scales, P),
+					temp: lg.temp(),
+					dewpt: lg.dewpt(),
+					elr: lg.elr(),
+					dalr: lg.dalr(),
+					malr: lg.malr(),
+					isohume: lg.isohume(),
 				};
 
 				return {

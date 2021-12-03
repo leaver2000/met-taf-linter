@@ -18,5 +18,5 @@ export default function SkewTSVG({ ...props }) {
 		return [w, h];
 	}, [mainDims]);
 
-	return <svg ref={ref} fill='green' width={width} height={height} className='skew-svg' {...props} />;
+	return <svg ref={ref} width={width} height={height} className='skew-svg' {...props} />;
 }

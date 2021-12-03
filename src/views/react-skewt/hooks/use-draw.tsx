@@ -15,13 +15,10 @@ export function useDraw() {
 				default:
 					return prevState;
 			}
-			// console.log(type, state);
-			// return {prevState};
 		},
 		{ hoverEvent: { isotherm: null, isobar: null } }
 	);
-	// console.log(hoverEvent);
-	// const [{}];
+
 	/**@destructureState */
 	const {
 		state: {
@@ -29,7 +26,7 @@ export function useDraw() {
 			scales: { x, y, tan } /**@scalesXYTan */,
 			options: { palette, onEvent } /**@PaletteOptions */,
 			lineGen /**@d3lineGenerators */,
-			d3Refs: { Diagram },
+			d3Refs: { Diagram, Sounding },
 			scales,
 			datums,
 			_all,
@@ -48,6 +45,7 @@ export function useDraw() {
 				.enter()
 				.append('path')
 				.attr('stroke-opacity', opacity)
+				.attr('stroke-width', 1.5)
 				.attr('fill', fill)
 				.attr('stroke', stroke)
 				.attr('d', lineGen.temp)
@@ -72,7 +70,7 @@ export function useDraw() {
 				.attr('fill', fill)
 				.attr('stroke', stroke)
 				.attr('stroke-opacity', opacity)
-				.attr('stroke-width', 3)
+				.attr('stroke-width', 1.5)
 				// .on('mouseout', ({ x, y }, dataset) => {
 				// 	hover({
 				// 		type: 'mouseout',
@@ -149,9 +147,6 @@ export function useDraw() {
 		[P, T, x, y, tan, height, palette.isotherms]
 	);
 
-	useEffect(() => {
-		if (!!hoverEvent.isobar && !!hoverEvent.isotherm) onEvent.hover(hoverEvent);
-	}, [onEvent, hoverEvent]);
 	const isohumes = useCallback(
 		(d3Sel) => {
 			const { stroke, opacity, fill } = palette.isohumes;
@@ -244,11 +239,21 @@ export function useDraw() {
 	const sounding = useCallback((d3Sel) => envMemo.forEach((drawFn) => drawFn(d3Sel)), [envMemo]);
 
 	useEffect(() => {
+		if (!!hoverEvent.isobar && !!hoverEvent.isotherm) onEvent.hover(hoverEvent);
+	}, [onEvent, hoverEvent]);
+
+	// onWindow Resize =
+	useEffect(() => {
 		if (!!Diagram) {
-			sounding(Diagram);
+			Diagram.selectAll('*').remove();
 			background(Diagram);
 		}
-	}, [width, height, Diagram, background, sounding]);
+
+		if (!!Sounding) {
+			Sounding.selectAll('*').remove();
+			sounding(Sounding);
+		}
+	}, [width, height, Diagram, background, Sounding, sounding]);
 
 	return { ...bgMemo, ...envMemo, background, sounding };
 }

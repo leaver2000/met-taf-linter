@@ -1,14 +1,15 @@
-import JSONTree from 'react-json-tree';
+// import JSONTree from 'react-json-tree';
 import { useD3 } from '../hooks/use-skewt';
+import Box from '@mui/material/Box';
 export default function Main({ ...props }) {
 	// ?
 	const {
 		ref,
-		draw,
+		// draw,
 		state: {
 			options: { palette },
 			_loadState: { initialized },
-			...state
+			// ...state
 		},
 		initializeVariables,
 		setState,
@@ -24,18 +25,23 @@ export default function Main({ ...props }) {
 		[]
 	);
 
-	const style = {
-		padding: '10px',
-		backgroundColor: palette.background,
-	};
-
 	return (
-		<div style={style}>
-			state:
-			<JSONTree hideRoot data={state} />
-			draw:
-			<JSONTree hideRoot data={draw} />
-			<div ref={ref} style={{ backgroundColor: palette.foreground }} {...(initialized ? props : [null])} />;
-		</div>
+		<Box
+			style={{ backgroundColor: palette.background }}
+			sx={{
+				padding: 1,
+				// margin: 10,
+			}}>
+			<Box
+				ref={ref}
+				style={{ backgroundColor: palette.foreground }}
+				sx={{
+					//
+					padding: 1,
+					// margin: 1,
+				}}
+				{...(initialized ? props : [null])}
+			/>
+		</Box>
 	);
 }

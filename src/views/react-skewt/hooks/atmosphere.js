@@ -1,5 +1,7 @@
-import * as math from './math.js';
-export const DEG2RAD = Math.PI / 180;
+import * as math from './math';
+import { pressureFromElevation, dryLapse } from './atmo2';
+// import { pressureFromElevation, dryLapse } from './atmo2.ts';
+// export const DEG2RAD = Math.PI / 180;
 // Gas constant for dry air at the surface of the Earth
 const Rd = 287;
 // Specific heat at constant pressure for dry air
@@ -20,9 +22,10 @@ const g = 9.80665;
  *
  * t0 is the starting temperature at p0 (degree Celsius).
  */
-export function dryLapse(p, tK0, p0) {
-	return tK0 * Math.pow(p / p0, Rd / Cpd);
-}
+// export function dryLapse(p, tK0, p0) {
+// 	console.log(p, tK0, p0);
+// 	return tK0 * Math.pow(p / p0, Rd / Cpd);
+// }
 
 //to calculate isohume lines:
 //1.  Obtain saturation vapor pressure at a specific temperature = partial pressure at a specific temp where the air will be saturated.
@@ -76,10 +79,10 @@ export function getElevation2(p, refp = 1013.25) {
 	return (145366.45 * (1 - Math.pow(p / refp, 0.190284))) / 3.28084;
 }
 
-export function pressureFromElevation(e, refp = 1013.25) {
-	e = e * 3.28084;
-	return Math.pow(-(e / 145366.45 - 1), 1 / 0.190284) * refp;
-}
+// export function pressureFromElevation(e, refp = 1013.25) {
+// 	e = e * 3.28084;
+// 	return Math.pow(-(e / 145366.45 - 1), 1 / 0.190284) * refp;
+// }
 
 export function getSurfaceP(surfElev, refElev = 110.8, refP = 1000) {
 	//calculate surface pressure at surfelev,   from reference elev and ref pressure.
@@ -144,6 +147,7 @@ export function parcelTrajectory(params, steps, sfcT, sfcP, sfcDewpoint) {
 
 	for (let elevation = minEl; elevation <= maxEl; elevation += stepEl) {
 		const p = pToEl.invert(elevation);
+		// console.log(p);
 		const t = dryLapse(p, sfcT, sfcP);
 		const dp = dewpoint(vaporPressure(p, mRatio));
 		dryGhs.push(elevation);
@@ -176,6 +180,7 @@ export function parcelTrajectory(params, steps, sfcT, sfcP, sfcDewpoint) {
 		parcel.isohumeToDry = [].concat(
 			math.zip(dryTempsTempline, dryPressures).filter((p) => p[1] >= LCLp),
 			[[LCL[1], LCLp]],
+
 			math
 				.zip(dryDewpoints, dryPressures)
 				.filter((p) => p[1] >= LCLp)
