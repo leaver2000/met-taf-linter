@@ -1,8 +1,6 @@
 import { useState, createContext, useContext, useEffect } from 'react';
 import * as d3 from 'd3';
 import { pressureFromElevation } from '../hooks/atmo2';
-import { DEG2RAD } from '../hooks/math';
-// import { defaultOptions } from './default-options';
 
 /**@JSXElement */
 export function Control({ data, options: { gradient, palette, onEvent }, children }) {
@@ -56,8 +54,13 @@ const makeIntialState = () => {
 
 	// ? scales
 
-	const ticks = d3.range(base, top - 50, -25);
-	const _all = Array.from(dryAdiabticLapseRate, (dalrValue) => Array.from(ticks, () => dalrValue));
+	const mbarTicks = d3.range(base, top - 50, -25);
+
+	var altTicks: number[] = [];
+	for (let i = 0; i < 20000; i += 10000 / 3.28084) altTicks.push(pressureFromElevation(i));
+
+	const _all = Array.from(dryAdiabticLapseRate, (dalrValue) => Array.from(mbarTicks, () => dalrValue));
+
 	const log = d3.range(base, top - 50, increment);
 
 	return {
@@ -72,15 +75,16 @@ const makeIntialState = () => {
 		P: {
 			at11km: pressureFromElevation(11000),
 			increment,
-			ticks,
+			mbarTicks,
+			altTicks,
 			base,
 			log,
 			top,
 		},
 		mainDims: { xOffset: 0, margin: { top: 30, right: 40, bottom: 20, left: 35 } },
 		_loadState: { initialized: false, loaded: false, sized: false, background: false },
-		scales: { tan: Math.tan(45 * DEG2RAD) },
 		_windBarbs: { size: 15 },
+		scales: {},
 		lineGen: {},
 		d3Refs: {},
 		_all,

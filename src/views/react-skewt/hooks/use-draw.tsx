@@ -26,10 +26,11 @@ export function useDraw() {
 			scales: { x, y, tan } /**@scalesXYTan */,
 			options: { palette, onEvent } /**@PaletteOptions */,
 			lineGen /**@d3lineGenerators */,
-			d3Refs: { Diagram, Sounding },
+			d3Refs: { Diagram, Sounding, Ticks },
 			scales,
 			datums,
 			_all,
+			axes,
 			T,
 			P /**@PressureObject */,
 		},
@@ -45,7 +46,7 @@ export function useDraw() {
 				.enter()
 				.append('path')
 				.attr('stroke-opacity', opacity)
-				.attr('stroke-width', 1.5)
+				// .attr('stroke-width', 1.5)
 				.attr('fill', fill)
 				.attr('stroke', stroke)
 				.attr('d', lineGen.temp)
@@ -70,7 +71,7 @@ export function useDraw() {
 				.attr('fill', fill)
 				.attr('stroke', stroke)
 				.attr('stroke-opacity', opacity)
-				.attr('stroke-width', 1.5)
+				// .attr('stroke-width', 1.5)
 				// .on('mouseout', ({ x, y }, dataset) => {
 				// 	hover({
 				// 		type: 'mouseout',
@@ -108,7 +109,7 @@ export function useDraw() {
 				.attr('stroke-opacity', opacity)
 				.attr('fill', fill)
 				.attr('stroke', stroke)
-				.attr('clip-path', 'url(#clipper)')
+				// .attr('clip-path', 'url(#clipper)')
 				.on('mouseover', ({ path: line }) => {
 					const isobar = line[0].__data__;
 					setEvent({ type: 'hoverEvent', isobar });
@@ -217,6 +218,22 @@ export function useDraw() {
 		[_all, lineGen.dalr, palette.dryAdiabats]
 	);
 
+	const ticks = useCallback(
+		(d3Sel) => {
+			const { x0, y0, y1, y2 } = axes;
+			d3Sel
+				.append('g')
+				.attr('class', 'x axis')
+				.attr('transform', 'translate(0,' + (height - 0.5) + ')')
+				.call(x0);
+			// .attr('clip-path', 'url(#clipper)');
+			d3Sel.append('g').attr('class', 'y axis').attr('transform', 'translate(-0.5,0)').call(y0);
+			d3Sel.append('g').attr('class', 'y axis ticks').attr('transform', 'translate(-0.5,0)').call(y1);
+			d3Sel.append('g').attr('class', 'y axis hght-ticks').attr('transform', 'translate(-0.5,0)').call(y2);
+		},
+		[height, axes]
+	);
+
 	/**@gridLines //* SkewT Diagram Gridlines */
 	const gridLines = useCallback(
 		(d3Sel: d3.Selection<any, unknown, null, undefined>) => {
@@ -232,7 +249,7 @@ export function useDraw() {
 		[isotherms, isobars, dryAdiabats, moistAdiabats, envLapseRate, isohumes, gridLines]
 	);
 	// drawAllbackground =>isotherms, isobars, dryAdiabats, moistAdiabats, envLapseRate, isohumes, gridLines
-	const background = useCallback((d3Sel) => bgMemo.forEach((drawFn) => drawFn(d3Sel)), [bgMemo]);
+	const diagram = useCallback((d3Sel) => bgMemo.forEach((drawFn) => drawFn(d3Sel)), [bgMemo]);
 
 	// draw Temp and Dewpoint = >temperature, dewpoint
 	const envMemo = useMemo(() => [temperature, dewpoint], [temperature, dewpoint]);
@@ -242,18 +259,15 @@ export function useDraw() {
 		if (!!hoverEvent.isobar && !!hoverEvent.isotherm) onEvent.hover(hoverEvent);
 	}, [onEvent, hoverEvent]);
 
-	// onWindow Resize =
+	// eslint-disable-next-line no-sequences
+	const clearThenDraw = useCallback((ref, draw) => (ref.selectAll('*').remove(), draw(ref)), []);
+
+	//
 	useEffect(() => {
-		if (!!Diagram) {
-			Diagram.selectAll('*').remove();
-			background(Diagram);
-		}
+		if (!!Diagram) clearThenDraw(Diagram, diagram);
+		if (!!Sounding) clearThenDraw(Sounding, sounding);
+		if (!!Ticks) clearThenDraw(Ticks, ticks);
+	}, [width, height, Diagram, diagram, Ticks, ticks, Sounding, sounding, clearThenDraw]);
 
-		if (!!Sounding) {
-			Sounding.selectAll('*').remove();
-			sounding(Sounding);
-		}
-	}, [width, height, Diagram, background, Sounding, sounding]);
-
-	return { ...bgMemo, ...envMemo, background, sounding };
+	return { ...bgMemo, ...envMemo, ticks, diagram, sounding };
 }

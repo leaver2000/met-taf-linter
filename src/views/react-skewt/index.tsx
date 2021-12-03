@@ -41,7 +41,6 @@ interface SKEWT {
 }
 
 ```
-
  */
 const Skewt = ({ data, options: { palette, gradient, onEvent } }: SKEWT) => {
 	return (

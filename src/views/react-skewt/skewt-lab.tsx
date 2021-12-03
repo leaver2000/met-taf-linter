@@ -1,5 +1,5 @@
 import { Command, Control } from './controller/c2';
-import { Diagram, Sounding } from './components/diagram';
+import { Diagram, Sounding, AxesTicks } from './components/diagram';
 import Main from './components/main';
 import Clipper from './components/clipper';
 import SkewTSVG from './components/skewt-svg';
@@ -24,6 +24,7 @@ const Components = () => (
 		<SkewTSVG>
 			<Diagram />
 			<Sounding />
+			<AxesTicks />
 			<Clipper />
 		</SkewTSVG>
 	</Main>

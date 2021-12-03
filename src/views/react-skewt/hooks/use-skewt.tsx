@@ -3,12 +3,25 @@ import * as d3 from 'd3';
 import LineGenerators from './line-generators';
 import { useDraw } from './use-draw';
 import { useC2 } from '../controller/c2';
-
+import { DEG2RAD } from './math';
+type CTX_T = { mid: number; range: number; skew: number[] };
+type CTX_P = { base: number; increment: number; top: number; at11km: number; log: number[]; mbarTicks: number[]; altTicks: number[] };
+type CTX_Scales = {
+	tan: number;
+	x: d3.ScaleLinear<number, number, never>;
+	y: d3.ScaleLogarithmic<number, number, never>; //
+};
+type CTX_Axes = {
+	x0: d3.Axis<d3.NumberValue>;
+	y0: d3.Axis<d3.NumberValue>;
+	y1: d3.Axis<d3.NumberValue>;
+	y2: d3.Axis<d3.NumberValue>;
+};
 export type SkewCTX = {
 	options: SkewTOptions;
 	data: { press: number; hght: number; temp: number; dwpt: number; wdir: number; wspd: number }[];
-	P: { base: number; increment: number; top: number; at11km: number; log: number[]; ticks: number[] };
-	T: { mid: number; range: number; skew: number[] };
+	P: CTX_P;
+	T: CTX_T;
 	lineGen: {
 		temp: d3.Line<[number, number]>; //
 		dewpt: d3.Line<[number, number]>;
@@ -18,11 +31,8 @@ export type SkewCTX = {
 		isohume: d3.Line<[number, number]>;
 	};
 	parameters: { [key: string]: d3.Selection<SVGElement, {}, HTMLElement, any> };
-	scales: {
-		tan: number;
-		x: d3.ScaleLinear<number, number, never>;
-		y: d3.ScaleLogarithmic<number, number, never>; //
-	};
+	axes: CTX_Axes;
+	scales: CTX_Scales;
 	_all: number[][];
 	datums: {
 		press: number;
@@ -47,6 +57,30 @@ export type SkewCTX = {
 };
 export type setSkewCTX = React.Dispatch<React.SetStateAction<SkewCTX>>;
 
+const tan = Math.tan(45 * DEG2RAD);
+const makeScales = (width: number, height: number, { mid, range }: CTX_T, { top, base }: CTX_P) => ({
+	x: d3
+		.scaleLinear()
+		.range([-width / 2, width + width / 2])
+		.domain([mid - range * 2, mid + range * 2]),
+	//
+	y: d3.scaleLog().range([0, height]).domain([top, base]),
+	tan,
+});
+
+const makeAxes = ({ x, y }: CTX_Scales, { log, mbarTicks, altTicks }) => {
+	const x0 = d3.axisBottom(x).tickSize(0).ticks(40); //.orient("bottom");
+	const y0 = d3
+		.axisLeft(y)
+		.tickSize(0)
+		.tickValues(log.filter((p) => p % 100 === 0 || p === 50 || p === 150))
+		.tickFormat(d3.format('.0d')); //.orient("left");
+	const y1 = d3.axisRight(y).tickSize(5).tickValues(mbarTicks); //.orient("right");
+	// d3.axisLeft(y).tickSize(2,0).tickValues(altticks);
+	const y2 = d3.axisLeft(y).tickSize(2).tickValues(altTicks);
+
+	return { x0, y0, y1, y2 };
+};
 export function useD3(refKey: string, render: (element: d3.Selection<any, unknown, null, undefined>) => { [key: string]: any } | void, deps: React.DependencyList) {
 	// statful CTX
 	const { state, setState }: { state: SkewCTX; setState: setSkewCTX } = useC2();
@@ -69,30 +103,19 @@ export function useD3(refKey: string, render: (element: d3.Selection<any, unknow
 			width = width - margin.left - margin.right;
 			height = width - margin.top - margin.bottom;
 
-			//? x scale
-			const x = d3
-				.scaleLinear()
-				.range([-width / 2, width + width / 2])
-				.domain([T.mid - T.range * 2, T.mid + T.range * 2]); //range is width*2
+			const scales = makeScales(width, height, T, P);
 
-			//? y scale
-			const y = d3.scaleLog().range([0, height]).domain([P.top, P.base]);
+			setState(({ _loadState, mainDims, ...oldState }) => {
+				// scales = { ...scales, ...newScales };
 
-			setState(({ _loadState, scales, mainDims, ...oldState }) => {
-				scales = { ...scales, x, y };
 				const lg = new LineGenerators(scales, P);
+				const lineGen = lg.makeAllLineGenerators();
 
-				const lineGen = {
-					temp: lg.temp(),
-					dewpt: lg.dewpt(),
-					elr: lg.elr(),
-					dalr: lg.dalr(),
-					malr: lg.malr(),
-					isohume: lg.isohume(),
-				};
+				const axes = makeAxes(scales, P);
 
 				return {
 					...oldState,
+					axes,
 					lineGen,
 					scales,
 					mainDims: { ...mainDims, width, height },
@@ -106,6 +129,7 @@ export function useD3(refKey: string, render: (element: d3.Selection<any, unknow
 
 	const resize = useCallback(
 		(e) => {
+			console.log();
 			initializeVariables(Main);
 		},
 		[initializeVariables, Main]

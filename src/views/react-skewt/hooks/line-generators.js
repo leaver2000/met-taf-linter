@@ -102,4 +102,7 @@ export default class LineGenerators {
 				return y(log[i]);
 			});
 	}
+	makeAllLineGenerators() {
+		return { temp: this.temp(), dewpt: this.dewpt(), elr: this.elr(), dalr: this.dalr(), malr: this.malr(), isohume: this.isohume() };
+	}
 }

@@ -7,7 +7,7 @@ export default function SkewTSVG({ ...props }) {
 		state: { mainDims },
 	} = useD3('skewSVG', (skewSVG) => ({ _loadState: { loaded: true } }), []);
 
-	const [width, height] = useMemo(() => {
+	const [width, height, top, left] = useMemo(() => {
 		const {
 			margin: { top, right, left, bottom },
 			width,
@@ -15,8 +15,12 @@ export default function SkewTSVG({ ...props }) {
 		} = mainDims;
 		const w = width + right + left;
 		const h = height + top + bottom;
-		return [w, h];
+		return [w, h, top, left];
 	}, [mainDims]);
 
-	return <svg ref={ref} width={width} height={height} className='skew-svg' {...props} />;
+	return (
+		<svg ref={ref} width={width} height={height}>
+			<g transform={`translate(${left}, ${top})`} {...props} />
+		</svg>
+	);
 }
