@@ -32,14 +32,13 @@ export function Control({ data, options: { gradient, palette, onEvent } = defaul
 }
 /**@Hook */
 export const useC2 = () => {
-	const { state, setState } = useContext(Context);
+	const { state, setState } = useContext(CTX);
 	return { state, setState };
 };
 /**@Hook */
 export function Command({ ...props }) {
 	const ctx = useController();
-
-	return <Context.Provider value={{ ...ctx }} {...props} />;
+	return <CTX.Provider value={{ ...ctx }} {...props} />;
 }
 
 const makeIntialState = () => {
@@ -99,4 +98,4 @@ const makeIntialState = () => {
 		_all,
 	};
 };
-const Context: any = createContext(useController);
+const CTX: any = createContext(useController);

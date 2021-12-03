@@ -1,21 +1,16 @@
-import { useMemo } from 'react';
-import { useD3 } from './hooks/use-skewt';
+import { Command, Control } from './controller/c2';
 import { Diagram, Sounding } from './components/diagram';
 import Main from './components/main';
-import { Command, Control } from './controller/c2';
-// import JSONTree from 'react-json-tree';
-function Components() {
-	return (
-		<Main>
-			<SVGSVGSkewt>
-				<Diagram />
-				<Sounding />
-				<Clipper />
-			</SVGSVGSkewt>
-		</Main>
-	);
-}
-
+import Clipper from './components/clipper';
+import SkewTSVG from './components/skewt-svg';
+/**
+ * Command and Control are an alias for the React.Context.Provider and React.Fragment
+ * The React.Fragment <Control data={data} options={options}> setState to the Provider
+ * A third custrom hook { useC2 } function is exported from './controller/c2'
+ * useC2 consumes useContext(CTX) and provides methods to consume and setState
+ * in the other various custom hooks.
+ *
+ */
 const SkewtLab = ({ data, options }: SkewTProps) => (
 	<Command>
 		<Control data={data} options={options}>
@@ -24,39 +19,26 @@ const SkewtLab = ({ data, options }: SkewTProps) => (
 	</Command>
 );
 
+// const Components() {
+// 	return (
+// 		<Main>
+// 			<SkewTSVG>
+// 				<Diagram />
+// 				<Sounding />
+// 				<Clipper />
+// 			</SkewTSVG>
+// 		</Main>
+// 	);
+// }
+
+const Components = () => (
+	<Main>
+		<SkewTSVG>
+			<Diagram />
+			<Sounding />
+			<Clipper />
+		</SkewTSVG>
+	</Main>
+);
+
 export default SkewtLab;
-
-function Clipper() {
-	// const clipper = skewBackground.append('clipPath').attr('id', 'clipper').append('rect').attr('x', 0).attr('y', 0).attr('width', width).attr('height', height);
-	const {
-		ref,
-		state: {
-			mainDims: { width, height },
-		},
-	} = useD3('clipper', (clipper) => ({}), []);
-	return (
-		<clipPath ref={ref} className='clipper' id='clipper'>
-			<rect width={width} height={height}></rect>
-		</clipPath>
-	);
-}
-
-function SVGSVGSkewt({ ...props }) {
-	const {
-		ref,
-		state: { mainDims },
-	} = useD3('skewSVG', (skewSVG) => ({ _loadState: { loaded: true } }), []);
-
-	const [width, height] = useMemo(() => {
-		const {
-			margin: { top, right, left, bottom },
-			width,
-			height,
-		} = mainDims;
-		const w = width + right + left;
-		const h = height + top + bottom;
-		return [w, h];
-	}, [mainDims]);
-
-	return <svg ref={ref} fill='green' width={width} height={height} className='skew-svg' {...props} />;
-}
