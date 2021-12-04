@@ -1,17 +1,38 @@
-import SkewtLab from './skewt-lab';
-// import { sounding } from './data/sounding';
+import { Command, Control } from './controller/c2';
+import Main from './components/main';
+import Clipper from './components/clipper';
+import SkewTSVG from './components/skewt-svg';
 import { ONEVENT, PALETTE } from './util';
-interface SKEWT {
-	data: SkewTData;
-	options: {
-		palette?: LineTypes;
-		gradient?: number;
-		onEvent?: {
-			click: (e) => void;
-			hover: (e) => void;
-		};
-	};
-}
+import { Diagram } from './components/diagram';
+import { Sounding } from './components/sounding';
+import { Ticks } from './components/ticks';
+
+/**
+ * Command and Control are an alias for the React.Context.Provider and React.Fragment
+ * The React.Fragment <Control data={data} options={options}> setsState to the Provider
+ * A third custrom hook { useC2 } function is exported from './controller/c2'
+ * useC2 consumes useContext(CTX) and provides methods to consume and setState
+ * in the other various custom hooks.
+ */
+const SkewtLab = ({ data, options }) => (
+	<Command>
+		<Control data={data} options={options}>
+			<Components />
+		</Control>
+	</Command>
+);
+
+const Components = () => (
+	<Main>
+		<SkewTSVG>
+			<Diagram />
+			<Sounding />
+			<Ticks />
+			<Clipper />
+		</SkewTSVG>
+	</Main>
+);
+
 /**
  * ### react-skewt
  * 
@@ -56,4 +77,15 @@ const Skewt = ({ data, options: { palette, gradient, onEvent } }: SKEWT) => {
 	);
 };
 
+interface SKEWT {
+	data: SkewTData;
+	options: {
+		palette?: LineTypes;
+		gradient?: number;
+		onEvent?: {
+			click: (e) => void;
+			hover: (e) => void;
+		};
+	};
+}
 export default Skewt;

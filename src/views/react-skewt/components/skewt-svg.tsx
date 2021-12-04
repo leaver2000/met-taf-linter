@@ -17,9 +17,11 @@ export default function SkewTSVG({ ...props }) {
 		const h = height + top + bottom;
 		return [w, h, top, left];
 	}, [mainDims]);
-
+	const handleMouseOver = (e) => {
+		console.log(e);
+	};
 	return (
-		<svg ref={ref} width={width} height={height}>
+		<svg ref={ref} width={width} height={height} onMouseOver={handleMouseOver}>
 			<g transform={`translate(${left}, ${top})`} {...props} />
 		</svg>
 	);

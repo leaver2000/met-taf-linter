@@ -1,9 +1,10 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
 import LineGenerators from './line-generators';
-import { useDraw } from './use-draw';
+// import { useDraw } from './use-draw';
 import { useC2 } from '../controller/c2';
 import { DEG2RAD } from './math';
+const tan = Math.tan(45 * DEG2RAD);
 type CTX_T = { mid: number; range: number; skew: number[] };
 type CTX_P = { base: number; increment: number; top: number; at11km: number; log: number[]; mbarTicks: number[]; altTicks: number[] };
 type CTX_Scales = {
@@ -23,17 +24,20 @@ export type SkewCTX = {
 	P: CTX_P;
 	T: CTX_T;
 	lineGen: {
-		temp: d3.Line<[number, number]>; //
+		// temp: d3.ValueFn<SVGPathElement,number,number>; //
+		temp: d3.Line<[number, number]>;
 		dewpt: d3.Line<[number, number]>;
 		elr: d3.Line<[number, number]>;
 		dalr: d3.Line<[number, number]>;
 		malr: d3.Line<[number, number]>;
 		isohume: d3.Line<[number, number]>;
 	};
+	diagramLines: any;
 	parameters: { [key: string]: d3.Selection<SVGElement, {}, HTMLElement, any> };
 	axes: CTX_Axes;
 	scales: CTX_Scales;
 	_all: number[][];
+	eventHandler: (e: any) => void;
 	datums: {
 		press: number;
 		hght: number;
@@ -53,11 +57,22 @@ export type SkewCTX = {
 		skewBackground: d3.Selection<any, unknown, null, undefined>;
 		[key: string]: d3.Selection<any, unknown, null, undefined>;
 	};
+	drawDiagram: (d3Sel: any) => {
+		diagramLines: {
+			isobars: any;
+			isotherms: any;
+			envLapseRate: any;
+			dryAdiabats: any;
+			moistAdiabats: any;
+		};
+	};
+	drawSounding: (d3Sel: any) => void;
+	drawTicks: (d3Sel: any) => void;
+	secondOrderRender: boolean;
 	_loadState: { initialized: boolean; loaded: boolean; sized: boolean; background: boolean };
 };
 export type setSkewCTX = React.Dispatch<React.SetStateAction<SkewCTX>>;
 
-const tan = Math.tan(45 * DEG2RAD);
 const makeScales = (width: number, height: number, { mid, range }: CTX_T, { top, base }: CTX_P) => ({
 	x: d3
 		.scaleLinear()
@@ -85,15 +100,20 @@ export function useD3(refKey: string, render: (element: d3.Selection<any, unknow
 	// statful CTX
 	const { state, setState }: { state: SkewCTX; setState: setSkewCTX } = useC2();
 	// const {} = useInitial();
-
+	// console.log(state);
 	const ref: React.MutableRefObject<any> = useRef();
 	// memo'd state for effects
 	const {
 		P,
 		T,
-		mainDims: { margin },
-		d3Refs: { Main },
+		mainDims: { margin, width, height },
+		drawDiagram,
+		drawTicks,
+		drawSounding,
+		d3Refs: { Main, Diagram, Ticks, Sounding },
+		secondOrderRender,
 	} = useMemo(() => state, [state]);
+	// console.log(state);
 
 	// ! ...callbacks
 	const initializeVariables = useCallback(
@@ -106,11 +126,8 @@ export function useD3(refKey: string, render: (element: d3.Selection<any, unknow
 			const scales = makeScales(width, height, T, P);
 
 			setState(({ _loadState, mainDims, ...oldState }) => {
-				// scales = { ...scales, ...newScales };
-
-				const lg = new LineGenerators(scales, P);
-				const lineGen = lg.makeAllLineGenerators();
-
+				const lineGen = new LineGenerators(scales, P).makeAllLineGenerators();
+				// const lineGen = lg.makeAllLineGenerators();
 				const axes = makeAxes(scales, P);
 
 				return {
@@ -127,14 +144,20 @@ export function useD3(refKey: string, render: (element: d3.Selection<any, unknow
 		[T, P, margin, setState]
 	);
 
+	/**@RESIZE
+	 * when the window is resized all SVG componentns need to be rerendered
+	 * setting the second order render to true will allow the use effer
+	 *
+	 */
 	const resize = useCallback(
 		(e) => {
-			console.log();
 			initializeVariables(Main);
+			setState(({ ...oldState }) => ({ ...oldState, secondOrderRender: true }));
 		},
-		[initializeVariables, Main]
+		[setState, initializeVariables, Main]
 	);
 
+	// First Orider Render
 	const handleD3Render = useCallback(() => {
 		const d3Ref = d3.select(ref.current);
 		const newState = render(d3Ref);
@@ -145,16 +168,36 @@ export function useD3(refKey: string, render: (element: d3.Selection<any, unknow
 				: { ...oldState, d3Refs: { [refKey]: d3Ref, ...d3Refs } }
 		);
 	}, [ref, refKey, render, setState]);
-
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	useEffect(() => (!!render ? handleD3Render() : void 0), []);
+	// Second Order Render
+	useEffect(() => {
+		if (secondOrderRender) {
+			if (!!Diagram) {
+				Diagram.selectAll('*').remove();
+				drawDiagram(Diagram);
+			}
+			if (!!Ticks) {
+				Ticks.selectAll('*').remove();
+				drawTicks(Ticks);
+			}
+			if (!!Sounding) {
+				Sounding.selectAll('*').remove();
+				drawSounding(Sounding);
+			}
+			setState(({ ...oldState }) => ({ ...oldState, secondOrderRender: false }));
+		}
+	}, [width, Diagram, height, setState, secondOrderRender, Sounding, Ticks, drawTicks, drawDiagram, drawSounding]);
+	// console.log(state);
 	//! effects
 	useEffect(() => (!!Main ? window.addEventListener('resize', resize) : void 0), [resize, Main]);
-
 	/**@IGNORE react-hooks/exhaustive-deps...//* only execute render when data changes*/
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	useEffect(() => (!!render ? handleD3Render() : void 0), [...deps]);
 
 	/**@CustomHook -> d3.render Callbacks */
-	const draw = useDraw();
+	// const draw = useDraw();
+	const eventHandler = useCallback((e) => {
+		// console.log(e);
+	}, []);
 
-	return { ref, state, setState, draw, initializeVariables, resize };
+	return { ref, state, setState, initializeVariables, resize, eventHandler };
 }
