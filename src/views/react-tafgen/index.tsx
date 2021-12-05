@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useReducer, useRef, createContext, useContext } from 'react';
+import React, { useState, useEffect, useReducer, useRef } from 'react';
 import Box from '@mui/material/Box';
 import ContentEditable from 'react-contenteditable';
-
+import { Command, useC2 } from './controller/c2';
 /**
  * TAF Code Format.
  *
@@ -51,19 +51,13 @@ export default function TafGen() {
 					}}
 					noValidate
 					autoComplete='off'>
-					<Header />
+					<Pad>
+						<h2>TAF-LINT 0.1</h2>
+					</Pad>
 					<TafLinter />
 				</Box>
 			</div>
 		</Command>
-	);
-}
-
-function Header() {
-	return (
-		<Pad>
-			<h2>TAF-LINT 0.1</h2>
-		</Pad>
 	);
 }
 
@@ -83,13 +77,12 @@ function TafLinter() {
 		backgroundColor: monokai.foreground,
 		border: '1px solid #888',
 	};
-	console.log(rows);
 
 	return (
 		<>
 			<Pad>
 				<div style={style}>
-					<Pad>{rows.map((row) => row)}</Pad>
+					<Pad>{rows.map((row: JSX.Element) => row)}</Pad>
 				</div>
 			</Pad>
 		</>
@@ -129,16 +122,16 @@ valid are removed).
 TAF, changing only the TAF header and the erroneous elements (e.g., if a TAF
 originally starting at 1600Z is corrected at 1615Z, all forecast g
  */
-function HEAD() {
+export function HEAD() {
 	const { state } = useC2();
 	console.log(state);
 	return <LINE immutableText={`${state.icao}`} />;
 }
 
-function TEMPO() {
+export function TEMPO() {
 	return <LINE immutableText={'TEMPO'} />;
 }
-function BECMG() {
+export function BECMG() {
 	return <LINE immutableText={'BECMG'} />;
 }
 function LINE({ immutableText }) {
@@ -178,39 +171,3 @@ function LINE({ immutableText }) {
 }
 
 const Pad = ({ ...props }) => <div style={{ padding: 10 }} {...props} />;
-
-/**@Hook */
-export const useC2 = () => {
-	const { state, setState } = useContext(CTX);
-
-	// const [rows, setRows] = useState()
-
-	const onEnter = useCallback(
-		(e: KeyboardEvent) => {
-			console.log(e);
-			const { ctrlKey, shiftKey } = e; //altKey
-			if (shiftKey) {
-				setState(({ rows, ...prevState }) => ({ ...prevState, rows: [...rows, <BECMG />] }));
-			}
-			if (ctrlKey) {
-				setState(({ rows, ...prevState }) => ({ ...prevState, rows: [...rows, <TEMPO />] }));
-			}
-		},
-		[setState]
-	);
-
-	return { state, setState, onEnter };
-};
-/**@Provider */
-export function Command({ ...props }) {
-	const initalState = { icao: 'KBLV', validTime: new Date() };
-	const ctx = useController(initalState);
-	return <CTX.Provider value={{ ...ctx }} {...props} />;
-}
-// const [rows, setRow] = useState([<HEAD />]);
-function useController(initalState) {
-	const [state, setState] = useState({ ...initalState, rows: [<HEAD />] });
-	return { state, setState };
-}
-
-const CTX: any = createContext(useController);
