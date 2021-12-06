@@ -1,40 +1,72 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
-
 import * as d3 from 'd3';
 import { useCTX } from '../controller/ctx-controller';
 import { useFetch } from '../hooks/use-fetch';
-
-export default function TimeControl() {
-	const {
-		index: { level, baseUrl },
-		dispatch,
-	} = useCTX();
-	const { getJSON } = useFetch(baseUrl);
+type Thermals = {
+	'2_m_agl_dpt': number[];
+	'2_m_agl_tmp': number[];
+	'2_m_agl_wbt': number[];
+};
+function useLab(baseUrl: string) {
+	const [data, setData] = useState<Thermals | null>(null);
 
 	const callback = useCallback(
 		(res: any, err: any) => {
 			if (!!err) {
-				throw new Error(err);
+				import('../data/dataset').then(({ thermals }) => setData(thermals));
+				// throw new Error(err);
 			} else {
-				switch (level) {
-					case 'sfc':
-						const {
-							dataset: { thermals },
-						} = res;
-						dispatch({ thermals });
-						// console.log(thermals, res);
-						break;
-					default:
-						break;
-				}
-
-				console.log(res);
+				const { thermals } = res.dataset;
+				setData(thermals);
 			}
 		},
-		[dispatch, level]
-	);
 
-	useEffect(() => getJSON('/temporal', { level }, callback), [getJSON, callback, level]);
+		[setData]
+	);
+	const { getJSON } = useFetch(baseUrl);
+	useEffect(() => getJSON('/temporal', { level: 'sfc' }, callback), [getJSON, callback]);
+	return data;
+}
+
+export default function TimeControl() {
+	const {
+		index: { baseUrl },
+		dispatch,
+	} = useCTX();
+
+	const thermals = useLab(baseUrl);
+
+	useEffect(() => {
+		if (!!thermals) {
+			dispatch({ thermals });
+		}
+	}, [thermals, dispatch]);
+
+	// const callback = useCallback(
+	// 	(res: any, err: any) => {
+	// 		if (!!err) {
+	// 			// throw new Error(err);
+	// 		} else {
+	// 			switch (level) {
+	// 				case 'sfc':
+	// 					const {
+	// 						dataset: { thermals },
+	// 					} = res;
+	// 					console.log(JSON.stringify(thermals));
+	// 					dispatch({ thermals });
+	// 					// console.log(thermals, res);
+	// 					break;
+	// 				default:
+	// 					break;
+	// 			}
+
+	// 			console.log(res);
+	// 		}
+	// 	},
+	// 	[dispatch, level]
+	// );
+
+	// useEffect(() => getJSON('/temporal', { level }, callback), [getJSON, callback, level]);
 
 	return (
 		<div>

@@ -39,7 +39,8 @@ export function useFetch(baseUrl: string) {
 
 			fetch(url(path, searchParams), { method })
 				.then((res) => res.json())
-				.then((res) => callback(res, undefined));
+				.then((res) => callback(res, undefined))
+				.catch((err) => callback({}, err));
 			// .catch(onError);
 		},
 		[url]

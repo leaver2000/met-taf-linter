@@ -5,6 +5,7 @@ import Skewt from '../views/react-skewt';
 import TimeControl from './time-ctrl';
 import { useCTX } from '../controller/ctx-controller';
 import { useFetch } from '../hooks/use-fetch';
+// import { dataset } from '../data/dataset';
 const SX = {
 	padding: 2,
 	width: '100',
@@ -22,24 +23,13 @@ function useLab2(baseUrl: string) {
 	const { getJSON } = useFetch(baseUrl);
 	const callback2 = useCallback((res: any, err: any) => {
 		if (!!err) {
-			throw new Error(err);
-		} else {
-			const { dataset } = res;
-			setFullDataset(dataset);
-			// dispatch({ basetime });
-		}
+			console.warn('FLASK API SERVER IS NOT RUNNING LOADING SAMPLE DATASET');
+			console.log(err);
+			import('../data/dataset').then(({ dataset }) => setFullDataset(dataset));
+		} else setFullDataset(res.dataset);
 	}, []);
 	// with the /skewt2 path the server returns a complete dataset with 0-144hr valid time
 	useEffect(() => getJSON('/skewt2', {}, callback2), [getJSON, callback2]);
-	// when the CTX time changes the dataset is resliced
-	// this prevents multiple API calls and creates a more fluid data stream
-	// downside being more data stored in the browser
-	// useEffect(() => {
-	// 	if (!!fullDataset) {
-	// 		const dataset = indexDataset(fullDataset, time);
-	// 		dispatch({ dataset });
-	// 	}
-	// }, [fullDataset, time, dispatch]);
 
 	return { fullDataset };
 }
