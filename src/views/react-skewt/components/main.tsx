@@ -50,12 +50,13 @@ export default function Main({ ...props }) {
 
 	/**@effect  resize event listner is added, on resized, itRequired is reset*/
 	useEffect(() => {
-		var timer: NodeJS.Timeout;
+		// var timer: NodeJS.Timeout;
 
 		//require, dispatch
 		window.addEventListener('resize', (event) => {
-			if (timer) clearTimeout(timer);
-			timer = setTimeout(() => dispatch({ init: true }), 250, event);
+			dispatch({ init: true });
+			// if (timer) clearTimeout(timer);
+			// setTimeout(() => dispatch({ init: true }), 250, event);
 		});
 	}, []);
 	return (

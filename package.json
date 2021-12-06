@@ -19,7 +19,7 @@
     },
     "scripts": {
         "start": "PORT=3001 react-scripts start",
-        "client":"PORT=3001 react-scripts start",
+        "client": "PORT=3001 react-scripts start",
         "server": "nodemon --watch server/ --exec python3 server/ DEV",
         "tarpy": "nodemon --watch server/ --exec python3 server/ TEST",
         "build": "react-scripts build",
@@ -48,9 +48,7 @@
         "@types/d3": "^7.1.0",
         "@types/react": "^17.0.37",
         "@types/react-dom": "^17.0.11",
-        "less": "^4.1.2",
         "nodemon": "^2.0.15",
-        "react-json-tree": "^0.15.1",
         "typescript": "^4.5.2"
     }
 }
