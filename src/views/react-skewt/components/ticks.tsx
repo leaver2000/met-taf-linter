@@ -20,16 +20,16 @@ export function Ticks({ ...props }) {
 			// console.log(axes);
 			d3Sel
 				.append('g')
-				.attr('class', 'x axis')
+				// .attr('class', 'x axis')
 				.attr('transform', 'translate(0,' + (height - 0.5) + ')')
 				.call(x0);
 			// .attr('clip-path', 'url(#clipper)');
 			d3Sel
 				.append('g')
-				.attr('class', 'y axis')
+				// .attr('class', 'y axis')
 				.attr('transform', 'translate(-0.5,0)')
-				.call(y0)
-				.on('mouseover', (e) => console.log(e));
+				.call(y0);
+			// .on('mouseover', (e) => console.log(e));
 			d3Sel.append('g').attr('class', 'y axis ticks').attr('transform', 'translate(-0.5,0)').call(y1);
 			d3Sel.append('g').attr('class', 'y axis hght-ticks').attr('transform', 'translate(-0.5,0)').call(y2);
 		},

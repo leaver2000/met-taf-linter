@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react';
 import * as d3 from 'd3';
-import LineGenerators from './line-generators';
-// import { useDraw } from './use-draw';
+
 import { useC2 } from '../controller/c2';
 import { DEG2RAD } from './math';
 const tan = Math.tan(45 * DEG2RAD);
@@ -68,12 +67,17 @@ export type SkewCTX = {
 	};
 	drawSounding: (d3Sel: any) => void;
 	drawTicks: (d3Sel: any) => void;
+
+	// resize: (d3Sel: any) => any;
+	// setResize: TsetResize;
+	resizeRequired: boolean;
 	secondOrderRender: boolean;
+	initialized: boolean;
 	_loadState: { initialized: boolean; loaded: boolean; sized: boolean; background: boolean };
 };
 export type setSkewCTX = React.Dispatch<React.SetStateAction<SkewCTX>>;
 
-const makeScales = (width: number, height: number, { mid, range }: CTX_T, { top, base }: CTX_P) => ({
+export const makeScales = (width: number, height: number, { mid, range }: CTX_T, { top, base }: CTX_P) => ({
 	x: d3
 		.scaleLinear()
 		.range([-width / 2, width + width / 2])
@@ -83,7 +87,7 @@ const makeScales = (width: number, height: number, { mid, range }: CTX_T, { top,
 	tan,
 });
 
-const makeAxes = ({ x, y }: CTX_Scales, { log, mbarTicks, altTicks }) => {
+export const makeAxes = ({ x, y }: CTX_Scales, { log, mbarTicks, altTicks }) => {
 	const x0 = d3.axisBottom(x).tickSize(0).ticks(40); //.orient("bottom");
 	const y0 = d3
 		.axisLeft(y)
@@ -96,108 +100,84 @@ const makeAxes = ({ x, y }: CTX_Scales, { log, mbarTicks, altTicks }) => {
 
 	return { x0, y0, y1, y2 };
 };
-export function useD3(refKey: string, render: (element: d3.Selection<any, unknown, null, undefined>) => { [key: string]: any } | void, deps: React.DependencyList) {
+
+type USEC2 = {
+	state: SkewCTX;
+	setState: setSkewCTX;
+};
+// state, onResize, setState, setOnResize, setD3Refs
+export function useD3(refKey: string | null, render?: (element: d3.Selection<any, unknown, null, undefined>) => { [key: string]: any } | void, deps?: React.DependencyList) {
 	// statful CTX
-	const { state, setState }: { state: SkewCTX; setState: setSkewCTX } = useC2();
+	const { state, setState }: USEC2 = useC2();
 	// const {} = useInitial();
 	// console.log(state);
 	const ref: React.MutableRefObject<any> = useRef();
 	// memo'd state for effects
 	const {
-		P,
-		T,
-		mainDims: { margin, width, height },
-		drawDiagram,
-		drawTicks,
-		drawSounding,
-		d3Refs: { Main, Diagram, Ticks, Sounding },
-		secondOrderRender,
+		mainDims: { width, height },
+		initialized,
 	} = useMemo(() => state, [state]);
-	// console.log(state);
 
 	// ! ...callbacks
-	const initializeVariables = useCallback(
-		(divMain) => {
-			let width = parseInt(divMain.style('width'), 10) - 10;
-			let height = width; //to fix
-			width = width - margin.left - margin.right;
-			height = width - margin.top - margin.bottom;
 
-			const scales = makeScales(width, height, T, P);
+	const renderWithD3 = useCallback(
+		(d3Sel) => {
+			if (!!render) {
+				switch (refKey) {
+					case 'Main':
+					case 'Clipper':
+						break;
+					default:
+						d3Sel.selectAll('*').remove();
+						break;
+				}
 
-			setState(({ _loadState, mainDims, ...oldState }) => {
-				const lineGen = new LineGenerators(scales, P).makeAllLineGenerators();
-				// const lineGen = lg.makeAllLineGenerators();
-				const axes = makeAxes(scales, P);
-
-				return {
-					...oldState,
-					axes,
-					lineGen,
-					scales,
-					mainDims: { ...mainDims, width, height },
-					_loadState: { ..._loadState, initialized: true },
-				};
-			});
-			return true;
+				render(d3Sel);
+			}
 		},
-		[T, P, margin, setState]
+		[refKey, render]
 	);
-
-	/**@RESIZE
-	 * when the window is resized all SVG componentns need to be rerendered
-	 * setting the second order render to true will allow the use effer
-	 *
-	 */
-	const resize = useCallback(
-		(e) => {
-			initializeVariables(Main);
-			setState(({ ...oldState }) => ({ ...oldState, secondOrderRender: true }));
-		},
-		[setState, initializeVariables, Main]
-	);
-
-	// First Orider Render
-	const handleD3Render = useCallback(() => {
-		const d3Ref = d3.select(ref.current);
-		const newState = render(d3Ref);
-		setState(({ d3Refs, ...oldState }: SkewCTX) =>
-			// ? with the spread operator the refKey is added to the d3Refs
-			!!newState
-				? { ...{ ...newState, ...oldState }, d3Refs: { [refKey]: d3Ref, ...d3Refs } } //
-				: { ...oldState, d3Refs: { [refKey]: d3Ref, ...d3Refs } }
-		);
-	}, [ref, refKey, render, setState]);
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-	useEffect(() => (!!render ? handleD3Render() : void 0), []);
-	// Second Order Render
+	// there are 2 useEffect render calls
+	// the first is responsible for rendering the
+	// non
 	useEffect(() => {
-		if (secondOrderRender) {
-			if (!!Diagram) {
-				Diagram.selectAll('*').remove();
-				drawDiagram(Diagram);
-			}
-			if (!!Ticks) {
-				Ticks.selectAll('*').remove();
-				drawTicks(Ticks);
-			}
-			if (!!Sounding) {
-				Sounding.selectAll('*').remove();
-				drawSounding(Sounding);
-			}
-			setState(({ ...oldState }) => ({ ...oldState, secondOrderRender: false }));
+		switch (refKey) {
+			// Main is called to render regardless of height and width
+			// as Main sets height and width
+			case 'Main':
+				renderWithD3(d3.select(ref.current));
+				break;
+			case 'Sounding':
+				renderWithD3(d3.select(ref.current));
+				break;
+			default:
+				if (!!width && !!height) renderWithD3(d3.select(ref.current));
+				break;
 		}
-	}, [width, Diagram, height, setState, secondOrderRender, Sounding, Ticks, drawTicks, drawDiagram, drawSounding]);
-	// console.log(state);
-	//! effects
-	useEffect(() => (!!Main ? window.addEventListener('resize', resize) : void 0), [resize, Main]);
-	/**@IGNORE react-hooks/exhaustive-deps...//* only execute render when data changes*/
+		return () => {};
+		/**@IGNORE react-hooks/exhaustive-deps...//* only execute render when data changes*/
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ref, refKey, width, height, ...(!!deps ? deps : [])]);
+
+	// useEffect(() => {
+	// 	switch (refKey) {
+	// 		case 'Sounding':
+	// 			if (!!width && !!height)renderWithD3(d3.select(ref.current));
+	// 			break;
+	// 		default:
+	// 			// if (!!width && !!height) renderWithD3(d3.select(ref.current));
+	// 			break;
+	// 	}
+	// 	return () => {};
+	// 	/**@IGNORE react-hooks/exhaustive-deps...//* only execute render when data changes*/
+	// 	// eslint-disable-next-line react-hooks/exhaustive-deps
+	// }, [ref, refKey, width, height, ...(!!deps ? deps : [])]);
 
 	/**@CustomHook -> d3.render Callbacks */
 	// const draw = useDraw();
 	const eventHandler = useCallback((e) => {
 		// console.log(e);
 	}, []);
-
-	return { ref, state, setState, initializeVariables, resize, eventHandler };
+	const isInitialized = useCallback(() => initialized, [initialized]);
+	return { ref, state, setState, eventHandler, isInitialized };
 }

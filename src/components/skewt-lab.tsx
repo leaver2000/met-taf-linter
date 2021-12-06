@@ -1,9 +1,10 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Skewt from '../views/react-skewt';
-import { sounding } from '../data/sounding';
+// import { sounding } from '../data/sounding';
 import TimeControl from './time-ctrl';
-
+import { useCTX } from '../controller/ctx-controller';
+import { useFetch } from '../hooks/use-fetch';
 const SX = {
 	padding: 2,
 	width: '100',
@@ -18,6 +19,30 @@ const SX = {
 export default function SkewtLab() {
 	const [position, setPosition] = useState(null);
 	const [palette, setPallet] = useState(palette1);
+	const {
+		index: { time, baseUrl, dataset },
+		dispatch,
+	} = useCTX();
+
+	const callBack = useCallback(
+		(res: any, err: any) => {
+			if (!!err) {
+				throw new Error(err);
+			} else {
+				const {
+					dataset,
+					properties: { basetime },
+				} = res;
+				// console.log();
+				// console.log(properties);
+				dispatch({ dataset, basetime });
+			}
+		},
+		[dispatch]
+	);
+	const { getJSON } = useFetch(baseUrl, callBack);
+
+	useEffect(() => getJSON('/skewt', { time }), [getJSON, time]);
 
 	const onEvent = useMemo(
 		() => ({
@@ -42,7 +67,7 @@ export default function SkewtLab() {
 				<button onClick={() => dispatchPalette(palette2)}>dispatch palette2</button>
 			</div>
 			{JSON.stringify(position)}
-			<Skewt data={sounding} options={{ onEvent, palette }} />
+			<Skewt data={dataset} options={{ onEvent, palette }} />
 		</Box>
 	);
 }

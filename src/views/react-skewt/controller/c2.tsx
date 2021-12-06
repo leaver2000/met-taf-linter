@@ -5,15 +5,10 @@ import { pressureFromElevation } from '../hooks/atmo2';
 /**@JSXElement */
 export function Control({ data, options: { gradient, palette, onEvent }, children }) {
 	const { state, setState } = useC2();
-	// console.log(state);
+
 	useEffect(() => {
 		return setState(({ ...initalState }) => {
-			var datums = [
-				data.filter(function (d) {
-					return d.temp > -1000 && d.dwpt > -1000;
-				}),
-			];
-			return { ...initalState, options: { gradient, palette, onEvent }, data, datums };
+			return { ...initalState, options: { gradient, palette, onEvent }, data };
 		});
 	}, [setState, data, gradient, palette, onEvent]);
 
@@ -22,6 +17,7 @@ export function Control({ data, options: { gradient, palette, onEvent }, childre
 /**@Hook */
 export const useC2 = () => {
 	const { state, setState } = useContext(CTX);
+
 	return { state, setState };
 };
 /**@Provider */
@@ -32,6 +28,7 @@ export function Command({ ...props }) {
 
 function useController() {
 	const [state, setState] = useState(() => makeIntialState());
+
 	return { state, setState };
 }
 
@@ -83,6 +80,8 @@ const makeIntialState = () => {
 		},
 		mainDims: { xOffset: 0, margin: { top: 30, right: 40, bottom: 20, left: 35 } },
 		_loadState: { initialized: false, loaded: false, sized: false, background: false },
+		initialized: false,
+		resizeRequired: false,
 		_windBarbs: { size: 15 },
 		scales: {},
 		lineGen: {},

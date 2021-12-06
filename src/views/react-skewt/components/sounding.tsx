@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useD3 } from '../hooks/use-skewt';
 import { useCallback, useEffect } from 'react';
 /**
@@ -5,16 +6,29 @@ import { useCallback, useEffect } from 'react';
  * renders the the Axes ticks on the left and bottom of the background Diagram
  */
 export function Sounding({ ...props }) {
+	const [datums, setDatums] = useState<any>(null);
 	const {
 		ref,
 		state: {
 			options: { palette } /**@PaletteOptions */,
 			lineGen /**@d3lineGenerators */,
-
-			datums,
+			data,
 		},
 		setState,
-	} = useD3('Sounding', (d3Sel) => drawSounding(d3Sel), []); //
+	} = useD3(
+		'Sounding',
+		(d3Sel) => {
+			if (!!datums) {
+				drawSounding(d3Sel);
+				return { datums };
+			}
+			// console.log(datums);
+		},
+		[datums]
+	); //
+	useEffect(() => {
+		setDatums([data.filter((d) => d.temp > -1000 && d.dwpt > -1000)]);
+	}, [data]);
 	const drawSounding = useCallback(
 		(d3Sel) => {
 			const temperature = (({ stroke, opacity, fill }) =>

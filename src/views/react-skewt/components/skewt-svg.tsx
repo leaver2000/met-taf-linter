@@ -5,7 +5,7 @@ export default function SkewTSVG({ ...props }) {
 	const {
 		ref,
 		state: { mainDims },
-	} = useD3('skewSVG', (skewSVG) => ({ _loadState: { loaded: true } }), []);
+	} = useD3(null);
 
 	const [width, height, top, left] = useMemo(() => {
 		const {

@@ -13,13 +13,15 @@
         "react": "^17.0.2",
         "react-contenteditable": "^3.3.6",
         "react-dom": "^17.0.2",
-        "react-html-parser": "^2.0.2",
         "react-router-dom": "^6.0.2",
         "react-scripts": "4.0.3",
         "web-vitals": "^1.0.1"
     },
     "scripts": {
         "start": "PORT=3001 react-scripts start",
+        "client":"PORT=3001 react-scripts start",
+        "server": "nodemon --watch server/ --exec python3 server/ DEV",
+        "tarpy": "nodemon --watch server/ --exec python3 server/ TEST",
         "build": "react-scripts build",
         "test": "react-scripts test",
         "eject": "react-scripts eject"
@@ -47,6 +49,7 @@
         "@types/react": "^17.0.37",
         "@types/react-dom": "^17.0.11",
         "less": "^4.1.2",
+        "nodemon": "^2.0.15",
         "react-json-tree": "^0.15.1",
         "typescript": "^4.5.2"
     }
