@@ -6,7 +6,7 @@ export default function Clipper() {
 		state: {
 			mainDims: { width, height },
 		},
-	} = useD3('Clipper', (clipper) => ({}), []);
+	} = useD3(null);
 	return (
 		<clipPath id='clipper' ref={ref}>
 			<rect x='20px' y='0' width={width} height={height} />

@@ -15,6 +15,34 @@ const SX = {
 	// 	opacity: [0.9, 0.8, 0.7],
 	// },
 };
+type Data = { press: number[]; hght: number[][]; temp: number[][]; dwpt: number[][]; wdir: number[][]; wspd: number[][] };
+
+function useLab2(baseUrl: string) {
+	const [fullDataset, setFullDataset] = useState<Data | null>(null);
+	const { getJSON } = useFetch(baseUrl);
+	const callback2 = useCallback((res: any, err: any) => {
+		if (!!err) {
+			throw new Error(err);
+		} else {
+			const { dataset } = res;
+			setFullDataset(dataset);
+			// dispatch({ basetime });
+		}
+	}, []);
+	// with the /skewt2 path the server returns a complete dataset with 0-144hr valid time
+	useEffect(() => getJSON('/skewt2', {}, callback2), [getJSON, callback2]);
+	// when the CTX time changes the dataset is resliced
+	// this prevents multiple API calls and creates a more fluid data stream
+	// downside being more data stored in the browser
+	// useEffect(() => {
+	// 	if (!!fullDataset) {
+	// 		const dataset = indexDataset(fullDataset, time);
+	// 		dispatch({ dataset });
+	// 	}
+	// }, [fullDataset, time, dispatch]);
+
+	return { fullDataset };
+}
 
 export default function SkewtLab() {
 	const [position, setPosition] = useState(null);
@@ -23,26 +51,15 @@ export default function SkewtLab() {
 		index: { time, baseUrl, dataset },
 		dispatch,
 	} = useCTX();
+	// const { getJSON } = useFetch(baseUrl);
+	const { fullDataset } = useLab2(baseUrl);
 
-	const callBack = useCallback(
-		(res: any, err: any) => {
-			if (!!err) {
-				throw new Error(err);
-			} else {
-				const {
-					dataset,
-					properties: { basetime },
-				} = res;
-				// console.log();
-				// console.log(properties);
-				dispatch({ dataset, basetime });
-			}
-		},
-		[dispatch]
-	);
-	const { getJSON } = useFetch(baseUrl, callBack);
-
-	useEffect(() => getJSON('/skewt', { time }), [getJSON, time]);
+	useEffect(() => {
+		if (!!fullDataset) {
+			const dataset = indexDataset(fullDataset, time);
+			dispatch({ dataset });
+		}
+	}, [fullDataset, time, dispatch]);
 
 	const onEvent = useMemo(
 		() => ({
@@ -71,6 +88,16 @@ export default function SkewtLab() {
 		</Box>
 	);
 }
+const indexDataset = ({ press, hght, temp, dwpt, wdir, wspd }: Data, tIdx: number) =>
+	//
+	press.map((press, i) => ({
+		press, //presure values are static and do not require indexing
+		hght: hght[tIdx][i],
+		temp: temp[tIdx][i],
+		dwpt: dwpt[tIdx][i],
+		wdir: wdir[tIdx][i],
+		wspd: wspd[tIdx][i],
+	}));
 
 const palette1 = {
 	temperature: {

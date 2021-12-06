@@ -9,8 +9,9 @@ export default function TimeControl() {
 		index: { level, baseUrl },
 		dispatch,
 	} = useCTX();
+	const { getJSON } = useFetch(baseUrl);
 
-	const callBack = useCallback(
+	const callback = useCallback(
 		(res: any, err: any) => {
 			if (!!err) {
 				throw new Error(err);
@@ -32,17 +33,27 @@ export default function TimeControl() {
 		},
 		[dispatch, level]
 	);
-	const { getJSON } = useFetch(baseUrl, callBack);
 
-	useEffect(() => getJSON('/temporal', { level }), [getJSON, level]);
+	useEffect(() => getJSON('/temporal', { level }, callback), [getJSON, callback, level]);
 
-	return <SVG />;
+	return (
+		<div>
+			hover over the temp and the mouse position will update the time,temp state
+			<br />
+			click a position and the skew-t will rerender
+			<br />
+			or hold down ctrl and move the mouse left and right
+			<br />
+			<SVG />
+		</div>
+	);
 }
 
 function SVG() {
 	const [dims, setDims] = useState<TDIMS | null>(null);
 	const [data, setDatums] = useState<TDATA | undefined>();
 	const [{ lines, scales }, setLinesScales] = useState<LineScales>({ scales: undefined, lines: undefined });
+	const [hover, setHover] = useState<{ temp: null | number; time: null | number }>({ temp: null, time: null });
 
 	const {
 		index: { thermals },
@@ -55,10 +66,15 @@ function SVG() {
 	const onEvent = useCallback(
 		(d: MouseEvent) => {
 			// const {}
-			if (!!scales) {
-				const { xScale } = scales; //yScale
-				const time = Math.round(xScale.invert(d.pageX));
-				// const temp = Math.round(yScale.invert(d.pageY));
+			if (!!scales && !!data) {
+				const { xScale, yScale } = scales; //yScale
+				// correction for mouse position //*! NEED WORK
+				const [xMin, xMax] = data.domain.X;
+				const t = Math.round(xScale.invert(d.pageX) - 2.5);
+				const time = t > xMax - 1 ? xMax - 1 : t < xMin ? xMin : t;
+
+				const temp = Math.round(yScale.invert(d.pageY));
+				// console.log(time)
 				switch (d.type) {
 					case 'click':
 						dispatch({ time });
@@ -66,39 +82,52 @@ function SVG() {
 					case 'mouseover':
 						break;
 					case 'mousemove':
+						// console.log(d.ctrlKey);
+						if (d.ctrlKey) {
+							dispatch({ time });
+						}
+						setHover({ time, temp });
 						break;
 					case 'mouseout':
 						break;
 
 					default:
+						console.log(d);
 						break;
 				}
 			}
 		},
-		[scales, dispatch]
+		[scales, dispatch, data]
 	);
 	//render callback
 	const plotLines = useCallback(
 		(svg, { temp, dwpt }, { height, width }) => {
+			var xAxisTranslate = -height / 8;
 			svg //
 				.append('path')
 				.attr('d', temp)
+				.attr('transform', 'translate(5, ' + xAxisTranslate + ')')
 				.attr('fill', 'none')
 				.attr('stroke', 'red');
+			// .attr('cursor', 'pointer');
 
 			svg //
 				.append('path')
 				.attr('d', dwpt)
+				.attr('transform', 'translate(5, ' + xAxisTranslate + ')')
 				.attr('fill', 'none')
 				.attr('stroke', 'green');
-
+			// var xAxisTranslate = height / 2 + 30;
 			svg //
 				.append('rect')
 				.style('fill', 'none')
 				.style('pointer-events', 'all')
+				// .attr('transform', 'translate(0, ' + xAxisTranslate + ')')
 				.attr('width', width)
 				.attr('height', height)
+				// .attr('cursor', 'pointer')
 				.on('click', onEvent)
+				.on('drag', onEvent)
 				.on('mouseover', onEvent)
 				.on('mousemove', onEvent)
 				.on('mouseout', onEvent);
@@ -166,9 +195,14 @@ function SVG() {
 	}, [scales, lines, plotLines, dims, plotAxes]);
 
 	return (
-		<div ref={mainRef} style={{ margin: 5, border: 'solid black', background: 'white', height: 90 }}>
-			{!!dims ? <svg ref={lineRef} width={dims.width} height={dims.height} /> : null}
-		</div>
+		<>
+			{JSON.stringify(hover)}
+			<div style={{ backgroundColor: 'green', padding: 5, height: 120 }}>
+				<div ref={mainRef} style={{ background: 'white', height: 110 }}>
+					{!!dims ? <svg ref={lineRef} {...dims} /> : null}
+				</div>
+			</div>
+		</>
 	);
 }
 function getDomain(data: number[]) {
@@ -196,10 +230,7 @@ function makeLineGenerators({ xScale, yScale }, { datums }) {
 }
 
 function makeScales({ domain: { X, Y } }, { height, width }) {
-	const xScale = d3
-		.scaleLinear()
-		.domain(X)
-		.range([0, width - 20]);
+	const xScale = d3.scaleLinear().domain(X).range([0, width]);
 
 	const yScale = d3 //
 		.scaleLinear()

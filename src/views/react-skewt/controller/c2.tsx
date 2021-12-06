@@ -1,5 +1,6 @@
 import { useState, createContext, useContext, useEffect } from 'react';
-import * as d3 from 'd3';
+// import * as d3 from 'd3';
+import { scaleLinear, range as arrange } from 'd3';
 import { pressureFromElevation } from '../hooks/atmo2';
 
 /**@JSXElement */
@@ -44,28 +45,26 @@ const makeIntialState = () => {
 	//*thermals
 	const mid = 0;
 	const range = 50;
-	const dryAdiabticLapseRate = d3
-		.scaleLinear()
+	const dryAdiabticLapseRate = scaleLinear()
 		.domain([mid - range * 2, mid + range * 4])
 		.ticks(36);
 
 	// ? scales
 
-	const mbarTicks = d3.range(base, top - 50, -25);
+	const mbarTicks = arrange(base, top - 50, -25);
 
 	var altTicks: number[] = [];
 	for (let i = 0; i < 20000; i += 10000 / 3.28084) altTicks.push(pressureFromElevation(i));
 
 	const _all = Array.from(dryAdiabticLapseRate, (dalrValue) => Array.from(mbarTicks, () => dalrValue));
 
-	const log = d3.range(base, top - 50, increment);
+	const log = arrange(base, top - 50, increment);
 
 	return {
 		T: {
 			mid,
 			range,
-			skew: d3
-				.scaleLinear()
+			skew: scaleLinear()
 				.domain([mid - range * 3, mid + range])
 				.ticks(24),
 		},
@@ -79,10 +78,7 @@ const makeIntialState = () => {
 			top,
 		},
 		mainDims: { xOffset: 0, margin: { top: 30, right: 40, bottom: 20, left: 35 } },
-		_loadState: { initialized: false, loaded: false, sized: false, background: false },
 		initialized: false,
-		resizeRequired: false,
-		_windBarbs: { size: 15 },
 		scales: {},
 		lineGen: {},
 		d3Refs: {},

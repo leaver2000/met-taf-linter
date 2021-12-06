@@ -1,12 +1,13 @@
 from datetime import datetime
 from tarpy.tarpy import Tarpy
+
 file_path1 = "data/2021102206Z"
 
 with open(f"{file_path1}.txt", "r") as file_in:
     t1S = datetime.now()
 
     tp = Tarpy(file_in)
-    d = tp.elevation_series3()
+    d = tp.elevation_dataframe()
     print(d)
     # print(d)
     # jsn = tp.geo_json()

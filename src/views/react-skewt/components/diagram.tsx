@@ -9,8 +9,9 @@ export function Diagram({ ...props }) {
 	/** destructure CTX from useD3 */
 	const {
 		ref,
-		eventHandler,
+		// eventHandler,
 		state: {
+			setHoverPosition,
 			mainDims: { height, width },
 			options: { palette } /**@PaletteOptions */,
 			lineGen /**@d3lineGenerators */,
@@ -25,7 +26,42 @@ export function Diagram({ ...props }) {
 		 * - arg2: callback to render
 		 */
 	} = useD3('Diagram', (d3Sel: any) => drawDiagram(d3Sel), []); //
+	const onEvent = useCallback(
+		(key: string, e) => {
+			// const { x, y, tan } = scales;
+			// const temp = Math.round(x.invert(e.x));
+			// const press = Math.round(y.invert(e.screenY - e.offsetY));
 
+			switch (e.type) {
+				case 'click':
+					// dispatch({ time });
+					break;
+				case 'mouseover':
+					// setState((...oldState)=>{
+					// 	return oldState
+					// })
+					console.log(e.target.__data__);
+					setHoverPosition(({ ...oldState }) => ({ ...oldState, [key]: e.target.__data__ }));
+					// console.log({ press, temp });
+					// setHover({ temp, press });
+					break;
+				case 'mousemove':
+					// console.log(d.ctrlKey);
+					// if (d.ctrlKey) {
+					// 	dispatch({ time });
+					// }
+					// setHover({ time, temp });
+					break;
+				case 'mouseout':
+					break;
+
+				default:
+					// console.log(d);
+					break;
+			}
+		},
+		[setHoverPosition]
+	);
 	/** render callback */
 	const drawDiagram = useCallback(
 		(d3Sel) => {
@@ -43,12 +79,13 @@ export function Diagram({ ...props }) {
 					.attr('y1', y)
 					.attr('y2', y)
 					.attr('stroke-opacity', opacity)
+					.on('mouseover', (e) => onEvent('isobars', e))
 					.attr('fill', fill)
 					.attr('stroke', stroke))(palette.isobars);
 
 			/**@isotherms //* Lines Of Equal Temperature */
 			const isotherms = (({ stroke, opacity, fill }) =>
-				d3Sel
+				d3Sel ////
 					.selectAll('isotherms')
 					.data(T.skew)
 					.enter()
@@ -57,15 +94,14 @@ export function Diagram({ ...props }) {
 					.attr('x2', (d: number) => x(d) - 0.5)
 					.attr('y1', 0)
 					.attr('y2', height)
+					.on('mouseover', (e) => onEvent('isotherms', e))
 					.attr('stroke-opacity', opacity)
 					.attr('fill', fill)
-					.attr('stroke', stroke)
-
-					.on('mouseover', eventHandler))(palette.isotherms);
+					.attr('stroke', stroke))(palette.isotherms);
 
 			/**@envLapseRate  //* Environmental Lapse Rate (ELR) */
 			const envLapseRate = (({ stroke, opacity, fill }) =>
-				d3Sel
+				d3Sel ////
 					.selectAll('elr')
 					.data([P.log.filter((p) => p > P.at11km).concat([P.at11km, 50])])
 					.enter()
@@ -77,7 +113,7 @@ export function Diagram({ ...props }) {
 
 			/**@moistAdiabats //* Moist Adiabatic Lapse Rate (MALR) */
 			const moistAdiabats = (({ stroke, opacity, fill }) =>
-				d3Sel //
+				d3Sel ////
 					.selectAll('malr')
 					.data(_all)
 					.enter()
@@ -89,7 +125,7 @@ export function Diagram({ ...props }) {
 
 			/**@dryAdiabats //* Dry Adiabatic Lapse Rate (DALR) */
 			const dryAdiabats = (({ stroke, opacity, fill }) =>
-				d3Sel //
+				d3Sel ////
 					.selectAll('dalr')
 					.data(_all)
 					.enter()
@@ -102,7 +138,7 @@ export function Diagram({ ...props }) {
 
 			return { diagramLines: { isobars, isotherms, envLapseRate, dryAdiabats, moistAdiabats } };
 		},
-		[P, T, scales, _all, lineGen, palette, eventHandler, height, width]
+		[P, T, scales, _all, lineGen, palette, height, width, onEvent]
 	);
 	/**register the draw callback to CTX - used on Window Resize */
 	useEffect(() => setState(({ ...oldState }) => ({ ...oldState, drawDiagram })), [setState, drawDiagram]);

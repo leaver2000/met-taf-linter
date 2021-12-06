@@ -1,5 +1,5 @@
-import * as atm from './atmosphere';
-import { pressureFromElevation, dryLapse } from './atmo2';
+import * as atm from '../util/atmosphere';
+import { pressureFromElevation, dryLapse } from '../util/atmo2';
 import { line, curveLinear } from 'd3';
 export const pAt11km = pressureFromElevation(11000);
 const K0 = 273.15;

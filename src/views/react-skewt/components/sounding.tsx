@@ -22,13 +22,10 @@ export function Sounding({ ...props }) {
 				drawSounding(d3Sel);
 				return { datums };
 			}
-			// console.log(datums);
 		},
 		[datums]
 	); //
-	useEffect(() => {
-		setDatums([data.filter((d) => d.temp > -1000 && d.dwpt > -1000)]);
-	}, [data]);
+	useEffect(() => setDatums([data.filter((d) => d.temp > -1000 && d.dwpt > -1000)]), [data]);
 	const drawSounding = useCallback(
 		(d3Sel) => {
 			const temperature = (({ stroke, opacity, fill }) =>
@@ -78,5 +75,5 @@ export function Sounding({ ...props }) {
 		[datums, lineGen.dewpt, lineGen.temp, palette.temperature, palette.dewpoint]
 	);
 	useEffect(() => setState(({ ...oldState }) => ({ ...oldState, drawSounding })), [setState, drawSounding]);
-	return <g strokeWidth='1.5' ref={ref} {...props} />;
+	return <g strokeWidth='1.25' ref={ref} {...props} />;
 }

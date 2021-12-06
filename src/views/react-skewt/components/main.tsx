@@ -1,13 +1,13 @@
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import Box from '@mui/material/Box';
-import { useD3, makeScales, makeAxes } from '../hooks/use-skewt';
-import LineGenerators from '../hooks/line-generators';
+import { useD3 } from '../hooks/use-skewt';
+import make from './make';
 
 const reducer = (oldState: any, newState: any) => ({ ...oldState, ...newState });
 export default function Main({ ...props }) {
 	/**@effect initRequired causes a useEffect reinitialization of the main dims*/
 	const [require, dispatch] = useReducer(reducer, { init: true });
-
+	const [hoverPosition, setHoverPosition] = useState({});
 	const {
 		ref,
 		state: {
@@ -30,10 +30,10 @@ export default function Main({ ...props }) {
 				width = width - margin.left - margin.right;
 				height = width - margin.top - margin.bottom;
 
+				const scales = make.scales(width, height, T, P);
+				const axes = make.axes(scales, P);
+				const lineGen = make.lines(scales, P);
 				setState(({ mainDims, ...oldState }) => {
-					const scales = makeScales(width, height, T, P);
-					const lineGen = new LineGenerators(scales, P).makeAllLineGenerators();
-					const axes = makeAxes(scales, P);
 					return {
 						...oldState,
 						axes,
@@ -41,6 +41,7 @@ export default function Main({ ...props }) {
 						scales,
 						mainDims: { ...mainDims, width, height },
 						initialized: true,
+						setHoverPosition,
 					};
 				});
 			}
@@ -60,8 +61,11 @@ export default function Main({ ...props }) {
 		});
 	}, []);
 	return (
-		<Box style={{ backgroundColor: palette.background }} sx={{ padding: 1 }}>
-			<main ref={ref} style={{ backgroundColor: palette.foreground }} {...(initialized ? props : [null])} />
-		</Box>
+		<>
+			{JSON.stringify(hoverPosition)}
+			<Box style={{ backgroundColor: palette.background }} sx={{ padding: 1 }}>
+				<main ref={ref} style={{ backgroundColor: palette.foreground }} {...(initialized ? props : [null])} />
+			</Box>
+		</>
 	);
 }

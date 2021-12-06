@@ -88,7 +88,15 @@ def skewt():
     data = jsonify(tp.elevation_series3(int(forecast_hour)))
     return data
 
-    # skew = tp.skewt().to_bytes(int(valid_time))
-    # output = io.BytesIO()
-    # FigureCanvas(skew).print_png(output)
-    # return Response(output.getvalue(), mimetype='image/png')
+
+@app.route("/api/skewt2", methods=['GET'])
+def skewt2():
+    # valid_time = dict(request.args)['TIME']
+    file_path1 = "data/2021102206Z"
+    with open(f"data/2021102206Z.txt", "r") as file_in:
+        tp = Tarpy(file_in)
+
+    # forecast_hour = dict(request.args)['time']
+
+    data = jsonify(tp.elevation_dataframe())
+    return data
