@@ -10,6 +10,43 @@ from tarpy._tsounding import TSounding
 from tarpy._tmeteogram import TMeteogram
 import re
 np.seterr(divide="ignore", invalid="ignore")
+
+
+
+INDEX_SFC = [
+    '10_m_agl_spd',
+    '10_m_agl_dir',
+    'noncv_gust_spd',
+    
+    'visibility',
+
+    'tstm_flag',
+
+    'fog_probability',
+
+    'prob_fzra',
+    'prob_pl',
+    'prob_mix',
+    'prob_sn',
+    'prob_ra',
+    'prob_rasn',
+    'prob_any_precip',
+    'llws_prob',
+
+    'cloud_base1',
+    'cloud_cover1',
+    'cloud_base2',
+    'cloud_cover2',
+    'cloud_base3',
+    'cloud_cover3',
+    'cloud_base4',
+    'cloud_cover4',
+
+    '2_m_agl_tmp',
+
+    'altimeter',
+]
+
 SKEWT_DESCRIPTION = """\
 The Array should be mapped -> Tuple destructured -> reformat [{x,y},...]\n
 This method reduces data transfer and is a fast to generate the dataset object\n
@@ -232,9 +269,7 @@ class Tarpy(TParse):
         wspd = df.loc[:, (slice(None), "speed"), ]
         wdir = df.loc[:, (slice(None), "dir"), ]
         press = self._make_mbars(39)
-        # stacked_datums = np.squeeze(
-        #     np.dstack((hght, temp, dwpt, wspd, wdir))).astype(int)
-        # keys = ['press', 'hght', 'temp', 'dwpt', 'wspd', 'wdir']
+
         dataset = {
             'press': press.tolist(),
             'hght': hght.values.tolist(),
@@ -245,6 +280,129 @@ class Tarpy(TParse):
         }
         feature = self._feature(dataset=dataset)
         return feature
+
+
+
+
+
+        # return df
+
+    def generate_taf(self, start=40, stop=90):
+
+        df =self.DataFrame.loc[(['sfc'],slice(None)),range(start,stop)]#.astype(int)
+        df.index = df.index.droplevel(0)
+
+        sfc_df = df.loc[INDEX_SFC,].rename(index={
+            '10_m_agl_spd':'wspd',
+            '10_m_agl_dir':'wdir',
+            'noncv_gust_spd':'wgust',
+            'visibility': 'vis',
+            'tstm_flag':'prob_tsra',
+            'fog_probability':'prob_fog',
+            '2_m_agl_tmp':'temp',
+            'altimeter':'altsg',
+            'llws_prob':'prob_llws'
+        })
+        print(list(sfc_df.index))
+
+        lines =[]
+        for i,(col,val) in enumerate(sfc_df.iteritems()):
+            print(i)
+            wind = self._taf_winds(val['wdir'],val['wspd'],val['wgust'])
+            vis = self._taf_visibility(val['vis'])
+            wx = self._taf_pres_wx(val.astype(int))
+            cloud_layers = self._taf_cloud_layers(val)
+            altsg = f"QNH{int(val['altsg']*100)}INS"
+
+            if i ==0:
+                head ='TAF KMTC 070100Z'
+            else:
+                head = f' BECMG 0708/0709'
+            line =  f'{head} {wind} {vis}{wx}{cloud_layers} {altsg}'
+            lines.append(line)
+        
+        # return None
+
+        return '\n'.join(lines)
+
+    @staticmethod
+    def _taf_pres_wx(val):
+        pap = val['prob_any_precip']
+        if pap == 0:
+            return ' '
+        else:
+            pr = val['prob_ra']
+            if pr <= 30:
+                return ' -RA '
+            elif pr <=60:
+                return ' RA '
+            else:
+                return ' +RA '
+        #     print(pr)
+        # # print(p)
+        # return
+    def _taf_cloud_layers(self,val):
+        layer1 = self._get_cloud_layer(val['cloud_cover1'],val['cloud_base1'])
+
+        if layer1 =='SKC':
+            cloud_layers = layer1
+
+        else:
+            layer2 = self._get_cloud_layer(val['cloud_cover2'],val['cloud_base2'])
+            
+            if layer2 =='SKC':
+                cloud_layers = layer1
+
+            else:
+                layer3 = self._get_cloud_layer(val['cloud_cover3'],val['cloud_base3'])
+
+                if layer3 =='SKC':
+                    cloud_layers =  f'{layer1} {layer2}'
+
+                else:
+                    layer4 = self._get_cloud_layer(val['cloud_cover4'],val['cloud_base4'])
+                    if layer4 =='SKC':
+                        cloud_layers = f'{layer1} {layer2} {layer3}'
+                    else:
+                        cloud_layers = f'{layer1} {layer2} {layer3} {layer4}'
+
+        return cloud_layers
+
+
+    @staticmethod
+    def _get_cloud_layer(cover,base):
+        if cover == 0:
+            return 'SKC'
+        elif cover  <= 2:
+            c = 'FEW'
+        elif cover <= 3:
+            c = 'SCT'
+        elif cover <= 5:
+            c = 'BKN'
+        else:
+            c = 'OVC'
+
+        b = base
+        return f'{c}{b:03n}'
+
+    @staticmethod
+    def _taf_visibility(vis):
+        vis = int(vis)
+        if vis >= 7:
+            return '9999'
+        return round(vis * 1609.344/100)*100
+
+    @staticmethod    
+    def _taf_winds(wdir,wspd,wgust):
+        wind = round(wdir/10)*10
+        speed = round(wdir/2)*2
+        gust = round(wgust/2)*2
+        if gust>15:
+            gust =f'G{gust:02n}'
+        else:
+            gust =''
+
+        return f'{wind:03n}{wspd:02n}{gust}KT'
 
 
 # { press: 650, hght: 3673.08, temp: -2.67, dwpt: -12.4, wdir: 28.0, wspd: 302.23 },

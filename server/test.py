@@ -7,7 +7,7 @@ with open(f"{file_path1}.txt", "r") as file_in:
     t1S = datetime.now()
 
     tp = Tarpy(file_in)
-    d = tp.elevation_dataframe()
+    d = tp.generate_taf()
     print(d)
     # print(d)
     # jsn = tp.geo_json()
