@@ -1,5 +1,6 @@
 import { createContext, useCallback, useState, useContext } from 'react';
 import { HEAD, BECMG, TEMPO } from '../index';
+
 /**@Hook */
 export const useC2 = () => {
 	const { state, setState } = useContext(CTX);
@@ -24,7 +25,11 @@ export const useC2 = () => {
 };
 /**@Provider */
 export function Command({ ...props }) {
-	const initalState = { icao: 'KBLV', validTime: new Date() };
+	const initalState = {
+		icao: 'KBLV',
+		// parser: peggy.generate("start = ('a' / 'b')+"),
+		validTime: new Date(),
+	};
 	const ctx = useController(initalState);
 	return <CTX.Provider value={{ ...ctx }} {...props} />;
 }
