@@ -5,28 +5,28 @@ import { Command, useC2 } from './controller/c2';
 import { parser } from './parser';
 // import * as peggy from 'peggy';
 // const ICAO = 'KADW';
-let TAF = `
-TAF KADW 070100Z 0701/0807 31020G35KT 9999 SCT020 BKN050 OVC080 530004 QNH2981INS
-  BECMG 0704/0705 31015G25KT 9999 SCT030 SCT200 510002 QNH2999INS
-  BECMG 0706/0707 31010KT 9999 FEW035 BKN200 QNH3005INS
-  BECMG 0806/0807 09006KT 9999 BKN100 QNH3007INS TX12/0701Z TN01/0712Z
-`;
+// let TAF = `
+// TAF KADW 070100Z 0701/0807 31020G35KT 9999 SCT020 BKN050 OVC080 530004 QNH2981INS
+//   BECMG 0704/0705 31015G25KT 9999 SCT030 SCT200 510002 QNH2999INS
+//   BECMG 0706/0707 31010KT 9999 FEW035 BKN200 QNH3005INS
+//   BECMG 0806/0807 09006KT 9999 BKN100 QNH3007INS TX12/0701Z TN01/0712Z
+// `;
 
-try {
-	const result = parser.parse('TAF KADW 12015G25KT 5000 SCT020', {});
-	console.log(result);
-} catch (e) {
-	console.log(e);
-}
+// try {
+// 	const result = parser.parse('TAF KADW 12015G25KT 5000 SCT020', {});
+// 	console.log(result);
+// } catch (e) {
+// 	console.log(e);
+// }
 
 //style
 const monokai = {
-	background: 'rgb(30,31,28)',
-	foreground: 'rgb(48,40,34)',
-	active: 'rgb(62,61,50)',
-	red: 'rgb(249,38,114)',
-	blue: 'rgb(102,217,239)',
-	green: 'rgb(116,226,40)',
+    background: 'rgb(30,31,28)',
+    foreground: 'rgb(48,40,34)',
+    active: 'rgb(62,61,50)',
+    red: 'rgb(249,38,114)',
+    blue: 'rgb(102,217,239)',
+    green: 'rgb(116,226,40)',
 };
 
 // let tafExample = `
@@ -38,65 +38,75 @@ const monokai = {
 // `;
 
 export default function TafGen() {
-	return (
-		<Command>
-			<div style={{ height: '100vh', width: '100%', backgroundColor: monokai.background, color: monokai.red }}>
-				<Box
-					component='form'
-					sx={{
-						'& .MuiTextField-root': { m: 1, width: '25ch' },
-					}}
-					noValidate
-					autoComplete='off'>
-					<Pad>
-						<h2>TAF-LINT 0.1</h2>
-					</Pad>
-					<TafLinter />
-				</Box>
-			</div>
-		</Command>
-	);
+    return (
+        <Command>
+            <div style={{ height: '100vh', width: '100%', backgroundColor: monokai.background, color: monokai.red }}>
+                <Box
+                    component='form'
+                    sx={{
+                        '& .MuiTextField-root': { m: 1, width: '25ch' },
+                    }}
+                    noValidate
+                    autoComplete='off'>
+                    <Pad>
+                        <h2>TAF-LINT 0.1</h2>
+                    </Pad>
+                    <TafLinter />
+                </Box>
+            </div>
+        </Command>
+    );
 }
 
 function TafLinter() {
-	const {
-		state: { rows, parser },
-	} = useC2();
+    const {
+        state: { rows },
+    } = useC2();
+    const [parserValue, setParserValue] = useState<any>(null)
+    const style: React.CSSProperties = {
+        fontFamily: 'monospace',
+        fontSize: '20px',
+        // padding: 2,
+        accentColor: 'blue',
+        textTransform: 'uppercase',
+        height: 200,
+        color: monokai.green,
+        backgroundColor: monokai.foreground,
+        border: '1px solid #888',
+    };
+    useEffect(() => {
+        try {
 
-	const style: React.CSSProperties = {
-		fontFamily: 'monospace',
-		fontSize: '20px',
-		// padding: 2,
-		accentColor: 'blue',
-		textTransform: 'uppercase',
-		height: 200,
-		color: monokai.green,
-		backgroundColor: monokai.foreground,
-		border: '1px solid #888',
-	};
+            const v = parser.parse('TAF KADW 12015G25KT 5000 SHRA SCT020 QNH2970INS', {});
+            setParserValue(v)
 
-	return (
-		<>
-			<Pad>
-				<div style={style}>
-					<Pad>{rows.map((row: JSX.Element) => row)}</Pad>
-				</div>
-			</Pad>
-		</>
-	);
+        } catch (e) {
+            setParserValue(e)
+            // throw new Error(`THERE WAS AN ERROR${e}`)
+        }
+    }, [])
+    return (
+        <>{JSON.stringify(parserValue)}
+            <Pad>
+                <div style={style}>
+                    <Pad>{rows.map((row: JSX.Element) => row)}</Pad>
+                </div>
+            </Pad>
+        </>
+    );
 }
 
 function reducer({ ...oldState }, { type, ...event }) {
-	switch (type) {
-		case 'blur':
-			return { ...oldState, backgroundColor: 'inherit' };
-		case 'focus':
-			return { ...oldState, backgroundColor: monokai.active };
+    switch (type) {
+        case 'blur':
+            return { ...oldState, backgroundColor: 'inherit' };
+        case 'focus':
+            return { ...oldState, backgroundColor: monokai.active };
 
-		default:
-			// console.log(type);
-			return oldState;
-	}
+        default:
+            // console.log(type);
+            return oldState;
+    }
 }
 
 /**
@@ -120,67 +130,67 @@ TAF, changing only the TAF header and the erroneous elements (e.g., if a TAF
 originally starting at 1600Z is corrected at 1615Z, all forecast g
  */
 export function HEAD() {
-	const { state } = useC2();
-	console.log(state);
-	return <LINE immutableText={`${state.icao}`} />;
+    const { state } = useC2();
+    console.log(state);
+    return <LINE immutableText={`${state.icao}`} />;
 }
 
 export function TEMPO() {
-	return <LINE immutableText={'TEMPO'} />;
+    return <LINE immutableText={'TEMPO'} />;
 }
 export function BECMG() {
-	return <LINE immutableText={'BECMG'} />;
+    return <LINE immutableText={'BECMG'} />;
 }
 const { localStorage } = window;
 
 function LINE({ immutableText }) {
-	const {
-		onEnter,
-		// state: { parser },
-	} = useC2();
-	const ref: React.MutableRefObject<any> = useRef();
-	const [{ backgroundColor }, dispatch] = useReducer(reducer, {
-		backgroundColor: 'inherit',
-		// innerHTML: '',
-	});
-	const [html, setHtml] = useState('');
-	useEffect(() => {
-		const cat = localStorage.getItem('TAF-LAB');
-		if (!!cat) setHtml(cat);
-	}, []);
-	const handleChange = (evt) => {
-		const { value } = evt.target;
-		localStorage.setItem('TAF-LAB', value);
+    const {
+        onEnter,
+        // state: { parser },
+    } = useC2();
+    const ref: React.MutableRefObject<any> = useRef();
+    const [{ backgroundColor }, dispatch] = useReducer(reducer, {
+        backgroundColor: 'inherit',
+        // innerHTML: '',
+    });
+    const [html, setHtml] = useState('');
+    useEffect(() => {
+        const cat = localStorage.getItem('TAF-LAB');
+        if (!!cat) setHtml(cat);
+    }, []);
+    const handleChange = (evt) => {
+        const { value } = evt.target;
+        localStorage.setItem('TAF-LAB', value);
 
-		try {
-			// const result = parser.parse(value);
-		} catch (e) {
-			console.log(e);
-		}
-		// console.log(result);
-		setHtml(value);
-	};
-	useEffect(() => {
-		if (!!ref.current) {
-			ref.current.addEventListener('keydown', (e) => {
-				if (e.key === 'Enter') {
-					e.preventDefault();
-					onEnter(e);
-				}
-			});
-		}
-	}, [onEnter]);
-	return (
-		<div onBlur={dispatch} onFocus={dispatch}>
-			{immutableText}
-			<ContentEditable
-				style={{ backgroundColor, width: '100', display: 'inline-block' }}
-				innerRef={ref}
-				html={html} // innerHTML of the editable div
-				onChange={handleChange} // handle innerHTML change
-			/>
-		</div>
-	);
+        try {
+            // const result = parser.parse(value);
+        } catch (e) {
+            console.log(e);
+        }
+        // console.log(result);
+        setHtml(value);
+    };
+    useEffect(() => {
+        if (!!ref.current) {
+            ref.current.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    onEnter(e);
+                }
+            });
+        }
+    }, [onEnter]);
+    return (
+        <div onBlur={dispatch} onFocus={dispatch}>
+            {immutableText}
+            <ContentEditable
+                style={{ backgroundColor, width: '100', display: 'inline-block' }}
+                innerRef={ref}
+                html={html} // innerHTML of the editable div
+                onChange={handleChange} // handle innerHTML change
+            />
+        </div>
+    );
 }
 
 const Pad = ({ ...props }) => <div style={{ padding: 10 }} {...props} />;
