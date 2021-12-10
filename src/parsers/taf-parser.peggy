@@ -66,7 +66,7 @@ ICAO = @word:$[A-Z]+ &{ return options.icao.includes(word) }
 //** -------------------------|   Line  |-----------------------------------
 
 Line = 
-    wind:WindGroup visibility:VisibilityGroup weather:CurrentWeather skyCondition:CloudObscurationGroup altsg:Altsg{
+    wind:WindGroup visibility:VisibilityGroup weather:WeatherGroup skyCondition:CloudObscurationGroup altsg:Altsg{
         const forecastedWX = validateCondtions(weather,{wind,visibility,weather,skyCondition}) 
 
         if(visibility<=9000 && forecastedWX.length === 0){
@@ -129,7 +129,7 @@ the forecast meteorological conditions.\
 
 
 TEMPO_Line "Tempo Line" = 
-    __ line :(  CurrentWeather )
+    __ line :(  WeatherGroup )
 
 
 TEMPO_TimeRange "TEMPO Group Valid Time" =
@@ -177,46 +177,43 @@ MM 'Minute' =
 
 
 //** ----------------------| WX |----------------------
-CurrentWeather "Current Weather"= 
-    allPossibleWXConditions:(RA? BR? VC?) {
+WeatherGroup "\
+[Weather (w’w’) Group]: intensity/proximity, followed by description,followed by precipitation type \
+(two precipitation types can be used in the same w’w’ group), obscuration, or \
+other weather phenomena (e.g., +SHRA is heavy showers of rain, +TSRAGR is \
+thunderstorms, heavy rain, and hail; -RASN is light rain and snow; TS is\
+thunderstorm without precipitation)."= 
+    allPossibleWXConditions:( (ThunderStorms / Precipitation)? Obscuration? Vicinity? ) {
         return allPossibleWXConditions
     } //{return {currentWx:wx.map(v=>!!v?v.join(""):"")}}
-
-// Qualifiers
-
-Qualifiers = (Intensity / "VC")
-
+// -----------------| QUALIFIERS |-----------------
+// 1.) INTENSITY OR PROXIMITY
 Intensity = ("-"/"+")
-// TSFLAG
-// TSRA =
-//     __ wx:(Intensity? "TSRA") {return wx.join("")}
-// SHRA = 
-//     __ wx:(Intensity? "SHRA") {return wx.join("")}
-// PRECIPITATION
-// Precipitation = ( DZ / RA  )
+Vicinity = 
+    __ wx:("VC" ("TS" / "SH" / "FG" / ("BL" ("SN" / "DU" / "SA")) / "PO" / "SS" / "DS" )){return wx.flat().join("")}
+// 2.) DESCRIPTORS
+ThunderStorms =
+    __ wx:(Intensity? "TS" ("RA" / "SN")? ("GR")?){return wx.flat().join("")}
 
-VC =
- __ wx:( "VC" ("TS"/"SH")) {return wx.join("")}
+// ---------------- |   WEATHER PHENOMENA | ---------------------
+// 3.) PRECIPITATION
+Precipitation = 
+    __ Intensity? ("DZ" / Rain)  
 
-DZ "Drizzle"=
-    __ wx:(Intensity? "DZ") {return wx.join("")}
+Rain = wx:(("SH" / "FZ")? "RA" ("SN")?){return wx.join("")}
 
-RA "Rain"= 
-    __ wx:(Intensity? ("SH" / "TS")? "RA") {return wx.join("")}
+// 4.) OBSCURATION
+Obscuration = 
+    __ wx:(Mist / Fog / Smoke / VolcanicAsh / WidespreadDust / Sand / Haze / Spray ){return wx}
 
-// SN Snow
-
-
-// DZ Drizzle
-// RA Rain
-// SN Snow
-// SG Snow Grains
-// IC Ice Crystals
-// (Diamond Dust)
-// PL Ice Pellets
-// GR Hail
-// GS Snow Pellets 
-// OBSCURATION
+Mist = "BR"
+Fog = "FG"
+Smoke = "FU" 
+VolcanicAsh = "VA"
+WidespreadDust = wx:(("BL")?"DU"){return wx.join("")}
+Sand ="SA"
+Haze = "HZ"
+Spray = "PY"
 
 BR = __ wx:"BR" {return wx}
 
@@ -256,9 +253,6 @@ WindGroup "1.3.4. Wind Group (dddffGfmfmKT). Surface wind direction, speed and g
 
 
 
-
-    
-
 Sustained =
     windSpeed:(ValidWinds) "KT" {return [windSpeed]}
 
@@ -288,8 +282,25 @@ VisibilityGroup "Visibility Group (VVVV)" =
         '0000' / '0100' / '0200' / '0300' / '0400' / '0600' / '0700' / '0800' / '0900' / 
         '1000' / '1100' / '1200' / '1200' / '1400' / '1500' / '1600' / '1700' / '1800' / 
         '2000' / '2200' / '2400' / '2600' / '2800' / '3000' / '3200' / '3400' / '3600' / 
-        '3700' / '4000' / '4400' / '4500' / '4700' / '5000' / '6000' / '7000' / '8000' / 
-        '9000' / '9999') { return Number(vis) }
+        '3700' / '4000' / '4400' / '4500' / '4700' / '4800' /'5000' / '6000' / '7000' / 
+        '8000' / '9000' / '9999') { 
+
+            if (options.isConusLocation && vis === "4800") {
+                throw {
+                    message:"Note 1: Substitute 5000 meters for 4800 meters Outside the Continental\
+                            United States (OCONUS) locations based on the host-nation national\
+                            practice.",
+                    found: location()
+                }
+            } else if (!options.isConusLocation && vis === "5000") throw {
+                message:"Note 1: Substitute 5000 meters for 4800 meters Outside the Continental\
+                        United States (OCONUS) locations based on the host-nation national\
+                        practice.",
+                found: location()
+            }
+
+            return [Number(vis)] 
+            }
 
 
 

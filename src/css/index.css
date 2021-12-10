@@ -1,4 +1,11 @@
 /* Please see the article */
+body {
+	margin: 0;
+	padding: 0;
+}
+.overlay {
+	fill: rgb(0, 0, 255, 0);
+}
 
 /* #editing,
 #highlighting {
