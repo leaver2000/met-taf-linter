@@ -5,16 +5,14 @@
     function flattenSkyCondition(L1,L2) {
         if(!!L2) return [L1,L2.flat()]
         return [L1]
-    }
-    function validateCondtions([TSRA,...conds],{wind,visibility,weather,skyCondition}){
-        let weatherConditions = []
-        if(!!TSRA){
-            weatherConditions.push(TSRA)
-
+    }//Precipitation)? Obscuration? Vicinity
+    function validateThunderstormForecast(skyCondition){
             var isLowestBrokenOrOvercastLayer = true
             skyCondition.forEach(([ccc,base,CBRemark])=>{
+
                 // validate CB remark
                 const isBrokenOrOvercast = ccc ==="BKN" | ccc ==="OVC"
+                console.log(ccc)
 
                 if(isBrokenOrOvercast && isLowestBrokenOrOvercastLayer){
                     isLowestBrokenOrOvercastLayer = false
@@ -24,7 +22,7 @@
                         found: location()
                     }
 
-                }else if (isBrokenOrOvercast && !isLowestBrokenOrOvercastLayer){
+                } else if (isBrokenOrOvercast && !isLowestBrokenOrOvercastLayer){
                     if (CBRemark) throw {
                         type: "SyntaxError",
                         message: 'Only include the CB remark on the lowest borken or overcast layer',
@@ -32,11 +30,53 @@
                     } 
                 }
             })
+    }
+    function validateCondtions([Precipitation,Obscuration,Vicinity],{wind,visibility,weather,skyCondition}){
+        let weatherConditions = [Obscuration,Vicinity]
+
+
+
+        if(!!Precipitation){
+            weatherConditions.push(Precipitation)
+            const precipType = Precipitation.replace(/(\+|-)/,"")
+            switch(precipType){
+                case "TSRA":
+                    validateThunderstormForecast(skyCondition)
+                    break
+
+
+
+
+                default:
+                    return
+            }
+
+            // var isLowestBrokenOrOvercastLayer = true
+            // skyCondition.forEach(([ccc,base,CBRemark])=>{
+            //     // validate CB remark
+            //     const isBrokenOrOvercast = ccc ==="BKN" | ccc ==="OVC"
+
+            //     if(isBrokenOrOvercast && isLowestBrokenOrOvercastLayer){
+            //         isLowestBrokenOrOvercastLayer = false
+            //         if (!CBRemark) throw {
+            //             type: "SyntaxError",
+            //             message: 'a CB remark is required on the lowest broken or overcast layer',
+            //             found: location()
+            //         }
+
+            //     }else if (isBrokenOrOvercast && !isLowestBrokenOrOvercastLayer){
+            //         if (CBRemark) throw {
+            //             type: "SyntaxError",
+            //             message: 'Only include the CB remark on the lowest borken or overcast layer',
+            //             found: location()
+            //         } 
+            //     }
+            // })
 
         }
-        conds.forEach(c=>{
-            if(!!c)weatherConditions.push(c)
-        })
+        // conds.forEach(c=>{
+        //     if(!!c)weatherConditions.push(c)
+        // })
         
 
         return weatherConditions
@@ -178,8 +218,8 @@ MM 'Minute' =
 
 //** ----------------------| WX |----------------------
 WeatherGroup "\
-[Weather (w’w’) Group]: intensity/proximity, followed by description,followed by precipitation type \
-(two precipitation types can be used in the same w’w’ group), obscuration, or \
+[Weather (w'w') Group]: intensity/proximity, followed by description,followed by precipitation type \
+(two precipitation types can be used in the same w'w' group), obscuration, or \
 other weather phenomena (e.g., +SHRA is heavy showers of rain, +TSRAGR is \
 thunderstorms, heavy rain, and hail; -RASN is light rain and snow; TS is\
 thunderstorm without precipitation)."= 
@@ -307,7 +347,7 @@ VisibilityGroup "Visibility Group (VVVV)" =
 //** ----------------------| CloudObscurationGroup (NsNsNshshshsCC). |----------------------
 
 CloudObscurationGroup "CloudObscurationGroup (NsNsNshshshsCC)" =
-    sc:( SKC / FEW / SCT / BKN / OVC / VV ) { return [...sc].flat() }
+    sc:( SKC / FEW / SCT / BKN / Overcast / VV ) { return [...sc].flat() }
 
 VV = __ nnn:("VV" CloudBase){ return [[nnn]] }
 
@@ -315,31 +355,32 @@ SKC =
     __ skc:("SKC"){return [skc]}
 
 FEW "(FEW = trace to 2/8ths);" = 
-    nnn:( L1:FewCoverage L2:( FEW / SCT / BKN / OVC )?{
+    nnn:( L1:FewCoverage L2:( FEW / SCT / Broken / Overcast )?{
         return flattenSkyCondition(L1,L2)
     })+{ return nnn }
 
 SCT "(SCT = 3/8ths to 4/8ths);" = 
-    nnn:( L1:ScatteredCoverage L2:( SCT / BKN / OVC )?{
-        return flattenSkyCondition(L1,L2)
-    } )+ { return nnn }
+    nnn:( L3:Scattered L4:( Scattered / BKN / Overcast )? L5:(BKN / Overcast )?{
+        return [[L3,L4,L5]]
+        // return flattenSkyCondition(L3,L4)
+    } ) { return [[nnn]] }
 
 BKN "(BKN = 5/8ths to 7/8ths);" = 
-    nnn:(L1:BrokenCoverage L2:( BKN / OVC )?{
+    nnn:(L5:Broken L6:( Broken / Overcast )?L7:( Broken / Overcast )?L8:(  Overcast )?{
         // L1 returns an array 
-        return flattenSkyCondition(L1,L2)
-    })+ { return nnn }
+        return [[L5,L6, L6, L7, L8]]//flattenSkyCondition(L1,L2)
+    }) { return [[nnn]] }
 
 FewCoverage =
 __ nnn: "FEW" base:CloudBase { return [nnn,...base] }
 
-ScatteredCoverage =
+Scattered =
 __ nnn: "SCT" base:CloudBase { return [nnn,...base] }
 
-BrokenCoverage = 
+Broken = 
 __ nnn: "BKN" base:CloudBase { return [nnn,...base] }
 
-OVC "(OVC = 8/8ths);" = 
+Overcast "(OVC = 8/8ths);" = 
 __ nnn: "OVC" base:CloudBase { return [[nnn,...base]] }
 
 CloudBase = 

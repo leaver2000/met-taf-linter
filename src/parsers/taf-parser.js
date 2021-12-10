@@ -296,7 +296,7 @@ function peg$parse(input, options) {
   var peg$e26 = peg$classExpectation(["1", ",", "2", ",", "3", ",", "4"], false, false);
   var peg$e27 = peg$otherExpectation("Minute");
   var peg$e28 = peg$classExpectation(["0", ",", "1", ",", "2", ",", "3", ",", "4", ",", "5", ",", "6"], false, false);
-  var peg$e29 = peg$otherExpectation("[Weather (w\u2019w\u2019) Group]: intensity/proximity, followed by description,followed by precipitation type (two precipitation types can be used in the same w\u2019w\u2019 group), obscuration, or other weather phenomena (e.g., +SHRA is heavy showers of rain, +TSRAGR is thunderstorms, heavy rain, and hail; -RASN is light rain and snow; TS isthunderstorm without precipitation).");
+  var peg$e29 = peg$otherExpectation("[Weather (w'w') Group]: intensity/proximity, followed by description,followed by precipitation type (two precipitation types can be used in the same w'w' group), obscuration, or other weather phenomena (e.g., +SHRA is heavy showers of rain, +TSRAGR is thunderstorms, heavy rain, and hail; -RASN is light rain and snow; TS isthunderstorm without precipitation).");
   var peg$e30 = peg$literalExpectation("-", false);
   var peg$e31 = peg$literalExpectation("+", false);
   var peg$e32 = peg$literalExpectation("VC", false);
@@ -507,38 +507,42 @@ function peg$parse(input, options) {
           return flattenSkyCondition(L1,L2)
       };
   var peg$f26 = function(nnn) { return nnn };
-  var peg$f27 = function(L1, L2) {
-          // L1 returns an array 
-          return flattenSkyCondition(L1,L2)
+  var peg$f27 = function(L3, L4, L5) {
+          return [[L3,L4,L5]]
+          // return flattenSkyCondition(L3,L4)
       };
-  var peg$f28 = function(nnn, base) { return [nnn,...base] };
-  var peg$f29 = function(nnn, base) { return [[nnn,...base]] };
-  var peg$f30 = function(base, tsFlag) {
+  var peg$f28 = function(L5, L6, L7, L8) {
+          // L1 returns an array 
+          return [[L5,L6, L6, L7, L8]]//flattenSkyCondition(L1,L2)
+      };
+  var peg$f29 = function(nnn, base) { return [nnn,...base] };
+  var peg$f30 = function(nnn, base) { return [[nnn,...base]] };
+  var peg$f31 = function(base, tsFlag) {
           if(!!tsFlag) return [Number(base.join("")*100), true]
           return [Number(base.join("")*100), false]
           };
-  var peg$f31 = function(alt, stg) {
+  var peg$f32 = function(alt, stg) {
        return [Number([alt, stg.join("")].join("."))]
    };
-  var peg$f32 = function(DDHH) {
+  var peg$f33 = function(DDHH) {
           return new Date(Date.UTC(2021,1, ...DDHH))
 
       };
-  var peg$f33 = function(max, min) {
+  var peg$f34 = function(max, min) {
           const [Tx, Dx, Hx] = max
           const [Tn, Dn, Hn] = min
 
           return {TX:max,TN:min}
       };
-  var peg$f34 = function(tx, utc) {
+  var peg$f35 = function(tx, utc) {
 
           const dt = Date(2024,)
           return [tx, utc]
       };
-  var peg$f35 = function(tx, utc) {
+  var peg$f36 = function(tx, utc) {
            return [tx,utc]
        };
-  var peg$f36 = function(tt) { 
+  var peg$f37 = function(tt) { 
           const [minus, ...temp] = tt
           if(!!minus) tt = ['-',...temp]
           return Number(tt.join(""))
@@ -2780,7 +2784,7 @@ function peg$parse(input, options) {
         if (s1 === peg$FAILED) {
           s1 = peg$parseBKN();
           if (s1 === peg$FAILED) {
-            s1 = peg$parseOVC();
+            s1 = peg$parseOvercast();
             if (s1 === peg$FAILED) {
               s1 = peg$parseVV();
             }
@@ -2885,9 +2889,9 @@ function peg$parse(input, options) {
       if (s4 === peg$FAILED) {
         s4 = peg$parseSCT();
         if (s4 === peg$FAILED) {
-          s4 = peg$parseBKN();
+          s4 = peg$parseBroken();
           if (s4 === peg$FAILED) {
-            s4 = peg$parseOVC();
+            s4 = peg$parseOvercast();
           }
         }
       }
@@ -2910,9 +2914,9 @@ function peg$parse(input, options) {
           if (s4 === peg$FAILED) {
             s4 = peg$parseSCT();
             if (s4 === peg$FAILED) {
-              s4 = peg$parseBKN();
+              s4 = peg$parseBroken();
               if (s4 === peg$FAILED) {
-                s4 = peg$parseOVC();
+                s4 = peg$parseOvercast();
               }
             }
           }
@@ -2948,55 +2952,35 @@ function peg$parse(input, options) {
 
     peg$silentFails++;
     s0 = peg$currPos;
-    s1 = [];
-    s2 = peg$currPos;
-    s3 = peg$parseScatteredCoverage();
-    if (s3 !== peg$FAILED) {
-      s4 = peg$parseSCT();
-      if (s4 === peg$FAILED) {
-        s4 = peg$parseBKN();
-        if (s4 === peg$FAILED) {
-          s4 = peg$parseOVC();
+    s1 = peg$currPos;
+    s2 = peg$parseScattered();
+    if (s2 !== peg$FAILED) {
+      s3 = peg$parseScattered();
+      if (s3 === peg$FAILED) {
+        s3 = peg$parseBKN();
+        if (s3 === peg$FAILED) {
+          s3 = peg$parseOvercast();
         }
+      }
+      if (s3 === peg$FAILED) {
+        s3 = null;
+      }
+      s4 = peg$parseBKN();
+      if (s4 === peg$FAILED) {
+        s4 = peg$parseOvercast();
       }
       if (s4 === peg$FAILED) {
         s4 = null;
       }
-      peg$savedPos = s2;
-      s2 = peg$f25(s3, s4);
+      peg$savedPos = s1;
+      s1 = peg$f27(s2, s3, s4);
     } else {
-      peg$currPos = s2;
-      s2 = peg$FAILED;
-    }
-    if (s2 !== peg$FAILED) {
-      while (s2 !== peg$FAILED) {
-        s1.push(s2);
-        s2 = peg$currPos;
-        s3 = peg$parseScatteredCoverage();
-        if (s3 !== peg$FAILED) {
-          s4 = peg$parseSCT();
-          if (s4 === peg$FAILED) {
-            s4 = peg$parseBKN();
-            if (s4 === peg$FAILED) {
-              s4 = peg$parseOVC();
-            }
-          }
-          if (s4 === peg$FAILED) {
-            s4 = null;
-          }
-          peg$savedPos = s2;
-          s2 = peg$f25(s3, s4);
-        } else {
-          peg$currPos = s2;
-          s2 = peg$FAILED;
-        }
-      }
-    } else {
+      peg$currPos = s1;
       s1 = peg$FAILED;
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f26(s1);
+      s1 = peg$f23(s1);
     }
     s0 = s1;
     peg$silentFails--;
@@ -3009,53 +2993,40 @@ function peg$parse(input, options) {
   }
 
   function peg$parseBKN() {
-    var s0, s1, s2, s3, s4;
+    var s0, s1, s2, s3, s4, s5;
 
     peg$silentFails++;
     s0 = peg$currPos;
-    s1 = [];
-    s2 = peg$currPos;
-    s3 = peg$parseBrokenCoverage();
-    if (s3 !== peg$FAILED) {
-      s4 = peg$parseBKN();
+    s1 = peg$currPos;
+    s2 = peg$parseBroken();
+    if (s2 !== peg$FAILED) {
+      s3 = peg$parseBroken();
+      if (s3 === peg$FAILED) {
+        s3 = peg$parseOvercast();
+      }
+      if (s3 === peg$FAILED) {
+        s3 = null;
+      }
+      s4 = peg$parseBroken();
       if (s4 === peg$FAILED) {
-        s4 = peg$parseOVC();
+        s4 = peg$parseOvercast();
       }
       if (s4 === peg$FAILED) {
         s4 = null;
       }
-      peg$savedPos = s2;
-      s2 = peg$f27(s3, s4);
-    } else {
-      peg$currPos = s2;
-      s2 = peg$FAILED;
-    }
-    if (s2 !== peg$FAILED) {
-      while (s2 !== peg$FAILED) {
-        s1.push(s2);
-        s2 = peg$currPos;
-        s3 = peg$parseBrokenCoverage();
-        if (s3 !== peg$FAILED) {
-          s4 = peg$parseBKN();
-          if (s4 === peg$FAILED) {
-            s4 = peg$parseOVC();
-          }
-          if (s4 === peg$FAILED) {
-            s4 = null;
-          }
-          peg$savedPos = s2;
-          s2 = peg$f27(s3, s4);
-        } else {
-          peg$currPos = s2;
-          s2 = peg$FAILED;
-        }
+      s5 = peg$parseOvercast();
+      if (s5 === peg$FAILED) {
+        s5 = null;
       }
+      peg$savedPos = s1;
+      s1 = peg$f28(s2, s3, s4, s5);
     } else {
+      peg$currPos = s1;
       s1 = peg$FAILED;
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f26(s1);
+      s1 = peg$f23(s1);
     }
     s0 = s1;
     peg$silentFails--;
@@ -3084,7 +3055,7 @@ function peg$parse(input, options) {
         s3 = peg$parseCloudBase();
         if (s3 !== peg$FAILED) {
           peg$savedPos = s0;
-          s0 = peg$f28(s2, s3);
+          s0 = peg$f29(s2, s3);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -3101,7 +3072,7 @@ function peg$parse(input, options) {
     return s0;
   }
 
-  function peg$parseScatteredCoverage() {
+  function peg$parseScattered() {
     var s0, s1, s2, s3;
 
     s0 = peg$currPos;
@@ -3118,7 +3089,7 @@ function peg$parse(input, options) {
         s3 = peg$parseCloudBase();
         if (s3 !== peg$FAILED) {
           peg$savedPos = s0;
-          s0 = peg$f28(s2, s3);
+          s0 = peg$f29(s2, s3);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -3135,7 +3106,7 @@ function peg$parse(input, options) {
     return s0;
   }
 
-  function peg$parseBrokenCoverage() {
+  function peg$parseBroken() {
     var s0, s1, s2, s3;
 
     s0 = peg$currPos;
@@ -3152,7 +3123,7 @@ function peg$parse(input, options) {
         s3 = peg$parseCloudBase();
         if (s3 !== peg$FAILED) {
           peg$savedPos = s0;
-          s0 = peg$f28(s2, s3);
+          s0 = peg$f29(s2, s3);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -3169,7 +3140,7 @@ function peg$parse(input, options) {
     return s0;
   }
 
-  function peg$parseOVC() {
+  function peg$parseOvercast() {
     var s0, s1, s2, s3;
 
     peg$silentFails++;
@@ -3187,7 +3158,7 @@ function peg$parse(input, options) {
         s3 = peg$parseCloudBase();
         if (s3 !== peg$FAILED) {
           peg$savedPos = s0;
-          s0 = peg$f29(s2, s3);
+          s0 = peg$f30(s2, s3);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -3264,7 +3235,7 @@ function peg$parse(input, options) {
         s2 = null;
       }
       peg$savedPos = s0;
-      s0 = peg$f30(s1, s2);
+      s0 = peg$f31(s1, s2);
     } else {
       peg$currPos = s0;
       s0 = peg$FAILED;
@@ -3341,7 +3312,7 @@ function peg$parse(input, options) {
             }
             if (s5 !== peg$FAILED) {
               peg$savedPos = s0;
-              s0 = peg$f31(s3, s4);
+              s0 = peg$f32(s3, s4);
             } else {
               peg$currPos = s0;
               s0 = peg$FAILED;
@@ -3387,7 +3358,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f32(s1);
+      s1 = peg$f33(s1);
     }
     s0 = s1;
 
@@ -3404,7 +3375,7 @@ function peg$parse(input, options) {
       s2 = peg$parseMinTemp();
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f33(s1, s2);
+        s0 = peg$f34(s1, s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -3457,7 +3428,7 @@ function peg$parse(input, options) {
               }
               if (s6 !== peg$FAILED) {
                 peg$savedPos = s0;
-                s0 = peg$f34(s3, s5);
+                s0 = peg$f35(s3, s5);
               } else {
                 peg$currPos = s0;
                 s0 = peg$FAILED;
@@ -3521,7 +3492,7 @@ function peg$parse(input, options) {
               }
               if (s6 !== peg$FAILED) {
                 peg$savedPos = s0;
-                s0 = peg$f35(s3, s5);
+                s0 = peg$f36(s3, s5);
               } else {
                 peg$currPos = s0;
                 s0 = peg$FAILED;
@@ -3593,7 +3564,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f36(s1);
+      s1 = peg$f37(s1);
     }
     s0 = s1;
 
@@ -3605,16 +3576,14 @@ function peg$parse(input, options) {
       function flattenSkyCondition(L1,L2) {
           if(!!L2) return [L1,L2.flat()]
           return [L1]
-      }
-      function validateCondtions([TSRA,...conds],{wind,visibility,weather,skyCondition}){
-          let weatherConditions = []
-          if(!!TSRA){
-              weatherConditions.push(TSRA)
-
+      }//Precipitation)? Obscuration? Vicinity
+      function validateThunderstormForecast(skyCondition){
               var isLowestBrokenOrOvercastLayer = true
               skyCondition.forEach(([ccc,base,CBRemark])=>{
+
                   // validate CB remark
                   const isBrokenOrOvercast = ccc ==="BKN" | ccc ==="OVC"
+                  console.log(ccc)
 
                   if(isBrokenOrOvercast && isLowestBrokenOrOvercastLayer){
                       isLowestBrokenOrOvercastLayer = false
@@ -3624,7 +3593,7 @@ function peg$parse(input, options) {
                           found: location()
                       }
 
-                  }else if (isBrokenOrOvercast && !isLowestBrokenOrOvercastLayer){
+                  } else if (isBrokenOrOvercast && !isLowestBrokenOrOvercastLayer){
                       if (CBRemark) throw {
                           type: "SyntaxError",
                           message: 'Only include the CB remark on the lowest borken or overcast layer',
@@ -3632,11 +3601,53 @@ function peg$parse(input, options) {
                       } 
                   }
               })
+      }
+      function validateCondtions([Precipitation,Obscuration,Vicinity],{wind,visibility,weather,skyCondition}){
+          let weatherConditions = [Obscuration,Vicinity]
+
+
+
+          if(!!Precipitation){
+              weatherConditions.push(Precipitation)
+              const precipType = Precipitation.replace(/(\+|-)/,"")
+              switch(precipType){
+                  case "TSRA":
+                      validateThunderstormForecast(skyCondition)
+                      break
+
+
+
+
+                  default:
+                      return
+              }
+
+              // var isLowestBrokenOrOvercastLayer = true
+              // skyCondition.forEach(([ccc,base,CBRemark])=>{
+              //     // validate CB remark
+              //     const isBrokenOrOvercast = ccc ==="BKN" | ccc ==="OVC"
+
+              //     if(isBrokenOrOvercast && isLowestBrokenOrOvercastLayer){
+              //         isLowestBrokenOrOvercastLayer = false
+              //         if (!CBRemark) throw {
+              //             type: "SyntaxError",
+              //             message: 'a CB remark is required on the lowest broken or overcast layer',
+              //             found: location()
+              //         }
+
+              //     }else if (isBrokenOrOvercast && !isLowestBrokenOrOvercastLayer){
+              //         if (CBRemark) throw {
+              //             type: "SyntaxError",
+              //             message: 'Only include the CB remark on the lowest borken or overcast layer',
+              //             found: location()
+              //         } 
+              //     }
+              // })
 
           }
-          conds.forEach(c=>{
-              if(!!c)weatherConditions.push(c)
-          })
+          // conds.forEach(c=>{
+          //     if(!!c)weatherConditions.push(c)
+          // })
           
 
           return weatherConditions

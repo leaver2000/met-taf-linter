@@ -4,7 +4,7 @@ export const Expression = React.forwardRef(({ onKeyDown, value, onInput }: { onI
 		<div style={{ position: 'relative', width: 800, height: 200, border: 'solid red', backgroundColor: 'grey' }}>
 			<TextArea onInput={onInput} onKeyDown={onKeyDown} value={value} />
 			<PreFormatted>
-				<code ref={ref} className='language-html' id='highlighting-content' style={{ textTransform: 'uppercase' }}>
+				<code ref={ref} className='language-html' id='highlighting-content'>
 					{value}
 				</code>
 			</PreFormatted>
@@ -15,8 +15,10 @@ const TextArea = ({ ...props }) => (
 	<textarea
 		style={{
 			//
-			...style,
-			...dims,
+			...positionDimensions,
+			// ...style,
+			// ...dims,
+			textTransform: 'uppercase',
 			zIndex: 1,
 			color: 'transparent',
 			backgroundColor: 'transparent',
@@ -31,9 +33,8 @@ const TextArea = ({ ...props }) => (
 const PreFormatted = ({ ...props }) => (
 	<pre
 		style={{
-			//
-			...style,
-			...dims,
+			...positionDimensions,
+			textTransform: 'uppercase',
 			zIndex: 0,
 		}}
 		id='highlighting'
@@ -41,15 +42,14 @@ const PreFormatted = ({ ...props }) => (
 		{...props}
 	/>
 );
-const style: React.CSSProperties = {
+
+const positionDimensions: React.CSSProperties = {
 	position: 'absolute',
 	top: 0,
 	left: 0,
-};
-const dims: React.CSSProperties = {
+	border: 0,
 	margin: '10px',
 	padding: '10px',
-	border: 0,
-	width: 'calc(100% - 32px)',
 	height: '150px',
+	width: 'calc(100% - 32px)',
 };

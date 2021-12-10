@@ -9,7 +9,7 @@
         "react-scripts": "4.0.3"
     },
     "scripts": {
-        "start": "PORT=3001 react-scripts start",
+        "start": "PORT=3002 react-scripts start",
         "peggy": "nodemon --watch src/parsers/ --exec peggy src/parsers/taf-parser.peggy",
         "build": "react-scripts build",
         "test": "react-scripts test",
