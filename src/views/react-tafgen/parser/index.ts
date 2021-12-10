@@ -1,21 +1,18 @@
 import * as peggy from 'peggy';
 
 function makeParser() {
-	return peggy.generate(`
-//** ------------------------------------------------------------
+    return peggy.generate(`
+//** -----------------------------------------------------------
 {
 
-    function flattenCloudLayers(ccc) {
-        const [firstLayer, secondLayer] = ccc.flat()
-        if(!!secondLayer){
-            return [firstLayer,secondLayer]
-        }
-        return firstLayer
+    function flattenSkyCondition(L1,L2) {
+        if(!!L2) return [L1,...L2.flat()]
+        return [L1]
       }
 
   }
   
-RUN = MessageHeading ChangeGroups+ TemperatureGroup 
+RUN = (MessageHeading Line) (ChangeGroups)+ (TemperatureGroup) 
 
 //** ------------------------------------------------------------
 __ "Single White Space Indicator" = 
@@ -32,7 +29,7 @@ ChangeGroups =
 //** ------------------------------------------------------------
 
 MessageHeading =
-  "TAF" __  header:(ICAO TAFTimes Line){return header}
+  "TAF" __  header:(ICAO TAFTimes){return header}
 
 ICAO = @word:$[A-Z]+ &{ return options.icao.includes(word) }
     
@@ -212,21 +209,17 @@ SKC =
 
 FEW "(FEW = trace to 2/8ths);" = 
     __ nnn:( L1:("FEW" CloudBase) L2:( FEW / SCT / BKN / OVC )?{
-        if(!!L2) return [L1,...L2.flat()]
-        return [L1]
+        return flattenSkyCondition(L1,L2)
     })+{ return nnn }
 
 SCT "(SCT = 3/8ths to 4/8ths);" = 
     __ nnn:( L1:("SCT" CloudBase) L2:( SCT / BKN / OVC )?{
-        if(!!L2) return [L1,...L2.flat()]
-        return [L1]
+        return flattenSkyCondition(L1,L2)
     } )+ { return nnn }
 
 BKN "(BKN = 5/8ths to 7/8ths);" = 
     __ nnn:(L1:("BKN" CloudBase) L2:( BKN / OVC )?{
-
-        if(!!L2) return [L1,...L2.flat()]
-        return [L1]
+        return flattenSkyCondition(L1,L2)
     })+ { return nnn }
 
 OVC "(OVC = 8/8ths);" = 
