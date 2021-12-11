@@ -1,92 +1,31 @@
 
 
 {
+	// function toKft(v){
+	// 	return Number(v.join(""))*100
 
+	// }
     function flattenSkyCondition(L1,L2) {
         if(!!L2) return [L1,L2.flat()]
         return [L1]
-    }//Precipitation)? Obscuration? Vicinity
-    function validateThunderstormForecast(skyCondition){
-            var isLowestBrokenOrOvercastLayer = true
-            skyCondition.forEach(([ccc,base,CBRemark])=>{
-
-                // validate CB remark
-                const isBrokenOrOvercast = ccc ==="BKN" | ccc ==="OVC"
-                console.log(ccc)
-
-                if(isBrokenOrOvercast && isLowestBrokenOrOvercastLayer){
-                    isLowestBrokenOrOvercastLayer = false
-                    if (!CBRemark) throw {
-                        type: "SyntaxError",
-                        message: 'a CB remark is required on the lowest broken or overcast layer',
-                        found: location()
-                    }
-
-                } else if (isBrokenOrOvercast && !isLowestBrokenOrOvercastLayer){
-                    if (CBRemark) throw {
-                        type: "SyntaxError",
-                        message: 'Only include the CB remark on the lowest borken or overcast layer',
-                        found: location()
-                    } 
-                }
-            })
     }
-    function validateCondtions([Precipitation,Obscuration,Vicinity],{wind,visibility,weather,skyCondition}){
-        let weatherConditions = [Obscuration,Vicinity]
-
-
-
-        if(!!Precipitation){
-            weatherConditions.push(Precipitation)
-            const precipType = Precipitation.replace(/(\+|-)/,"")
-            switch(precipType){
-                case "TSRA":
-                    validateThunderstormForecast(skyCondition)
-                    break
-
-
-
-
-                default:
-                    return
-            }
-
-            // var isLowestBrokenOrOvercastLayer = true
-            // skyCondition.forEach(([ccc,base,CBRemark])=>{
-            //     // validate CB remark
-            //     const isBrokenOrOvercast = ccc ==="BKN" | ccc ==="OVC"
-
-            //     if(isBrokenOrOvercast && isLowestBrokenOrOvercastLayer){
-            //         isLowestBrokenOrOvercastLayer = false
-            //         if (!CBRemark) throw {
-            //             type: "SyntaxError",
-            //             message: 'a CB remark is required on the lowest broken or overcast layer',
-            //             found: location()
-            //         }
-
-            //     }else if (isBrokenOrOvercast && !isLowestBrokenOrOvercastLayer){
-            //         if (CBRemark) throw {
-            //             type: "SyntaxError",
-            //             message: 'Only include the CB remark on the lowest borken or overcast layer',
-            //             found: location()
-            //         } 
-            //     }
-            // })
-
-        }
-        // conds.forEach(c=>{
-        //     if(!!c)weatherConditions.push(c)
-        // })
-        
-
-        return weatherConditions
-
-    }
+	function getUTCDate( DDHHMM ){
+		const { year, month } = options
+		return new Date(Date.UTC(year,month,...DDHHMM))//.g
+	}
+	class EncodingException {
+		constructor({ type, message, found, expected }) {
+			this.type = type
+			this.message = message
+			this.expected = expected
+			this.found = found
+		}
+	}
     
 
   }
   
-RUN = (MessageHeading Line) (BECMG_Group / TEMPO_Group)+ (TemperatureGroup) 
+RUN = MessageHeading (BECMG_Group / TEMPO_Group)+ TemperatureGroup
 
 //** ------------------------------------------------------------
 __ "Single White Space Indicator" = 
@@ -99,36 +38,56 @@ _NL "New Line Indicator" =
 //** ------------------------------------------------------------
 
 MessageHeading 'TAF Header' =
-  "TAF" __  header:(ICAO TAFTimes){return header}
+  "TAF" __  header:(ICAO TAFTimes Line) { return header }
 
 ICAO = @word:$[A-Z]+ &{ return options.icao.includes(word) }
     
 //** -------------------------|   Line  |-----------------------------------
 
 Line = 
-    wind:WindGroup visibility:VisibilityGroup weather:WeatherGroup skyCondition:CloudObscurationGroup altsg:Altsg{
-        const forecastedWX = validateCondtions(weather,{wind,visibility,weather,skyCondition}) 
-
-        if(visibility<=9000 && forecastedWX.length === 0){
-            throw {
-                message:"\
-                1.3.5. Visibility Group (VVVV). Forecast prevailing visibility in meters, rounded down to\
-                the nearest reportable value from Table 1.1. Include weather and/or an obscuration (w’w’)\
-                whenever visibility is forecast less than 9,999 meters. (T-0) If visibility alternates frequently\
-                from one significant value to another, describe the situation with a TEMPO group; do not use\
-                variable visibility remarks. Note: While a visibility of less than 9,999 meters requires a weather\
-                and/or obscuration, weather such as precipitation does not require a restriction to visibility to\
-                be reported in a forecast (e.g., 9999 –RA). In this case, the weather is significant because it is\
-                occurring, not because it is restricting visibility.",
-                found:location()
-                }
-        }
+WindGroup VisibilityGroup WeatherGroup CloudObscurationGroup LowLevelWindShearGroup? IcingGroup? TurbulenceGroup? LowestAltimeterGroup
 
 
 
-        return [wind, visibility, forecastedWX, skyCondition, altsg ]
-    } 
+//** -------|  1.3.9. Operationally significant/Hazardous weather Groups.   |----------------------
+// 1.3.9. Operationally significant/Hazardous weather Groups. Volcanic ash and wind shear are
+// potentially hazardous problems for aircraft. Include forecasts for ash and non-convective wind
+// shear on an as-needed basis to focus the attention of the pilot on existing or expected problems
 
+//** ------------------------|   (VAbbbttt)   |------------------------------------    
+VolcanicAshGroup "1.3.9.2. Volcanic Ash (VA) Group (VAbbbttt)" =
+__ "VA"
+
+//** ------------------------|  (WShxhxhx/dddfffKT)   |------------------------------------    
+// 1.3.9.2. Non-Convective Low-Level Wind Shear Group (WShxhxhx/dddfffKT)
+LowLevelWindShearGroup "1.3.9.2. Non-Convective Low-Level Wind Shear Group (WShxhxhx/dddfffKT)" =
+//Use this group only to forecast wind shear not associated with convective 
+//activity from the surface up to and including 2,000 feet AGL
+__ "WS" hxhxhx:([0]([0,1][0-9]/[2][0])) "/" ddd:Direction ff:([0-9][0-9])"KT" {
+	const height = Number(hxhxhx.flat().join(""))*100
+	return ["WS",height, ddd, Number(ff.join(""))]}
+
+//-------------|1.3.10. Icing Group && 1.3.11. Turbulence Group ---------
+// Forecast icing group used to forecast icing not associated
+// with thunderstorms (thunderstorm forecasts imply moderate or greater icing). Repeat as
+// necessary to indicate multiple icing layers. Omit when no icing is forecast. Format icing
+// groups as:
+
+// Forecast turbulence group used only to forecast
+// turbulence not associated with a thunderstorm (thunderstorms already imply severe or extreme
+// turbulence). Turbulence forecasts apply to category II (CAT II) aircraft. 
+
+//-------------|(6IchihihitL)  |---------
+IcingGroup "1.3.10. Icing Group (6IchihihitL)" = 
+__ icing:([6][0-9]BaseHeight Thickness) {return icing}
+//-------------| (5BhBhBhBtL) |-------
+TurbulenceGroup "1.3.11. Turbulence group (5BhBhBhBtL)" =
+__ turb:([5][0-9]BaseHeight Thickness) {return turb}
+//	BASE HEIGHT
+BaseHeight "Table 1.4. Height of Lowest Level of Turbulence (hBhBhB)/Icing (hihihi)" =
+bH:(([0]([0][0-9] / [1][0,1] /[9][9])) / ([1][0,1,2][0]))   { return bH.flat().join("")*100 }
+//	THICKNESS
+Thickness "Thickness (tL)" = tL:([0-9]){return Number(tL)*1000}
 //** ------------------------|  BECMG   |------------------------------------    
 BECMG_Group "\
 Becoming (BECMG)—The change-indicator group TTTTT YYGG/YYGeGe in\
@@ -142,20 +101,7 @@ description of all elements for which the change is forecast. The forecast condi
 encoded after the BECMG YYGG/YYGeGe group are those elements expected to prevail\
 from the ending time of this change group (GeGe) to the ending time of the forecast period\
 " = 
-     _NL "BECMG" becmgGroup:( BECMG_TimeRange Line ) {
-         return { becmgGroup }
-        }
-
-
-BECMG_TimeRange "BECMG Group Valid Time" =
-    __ startTime:( DD HH ) "/" endTime: ( DD HH ) {
-        
-
-        const start = new Date(Date.UTC(2021, 1, ...startTime))
-        // console.log(start.getHours())
-        const end = new Date(Date.UTC(2021, 1, ...endTime))
-        return { start, end }
-}
+_NL becmgGroup:("BECMG"  UTCStartStop Line ) {return  becmgGroup}
 
 
 //** ------------------------------------------------------------
@@ -165,56 +111,38 @@ Temporary (TEMPO)—The change-indicator group TTTTT YYGG/YYGeGe in\
 the form of TEMPO YYGG/YYGeGe group is used to indicate temporary fluctuations to\
 the forecast meteorological conditions.\
 "= 
-    _NL "TEMPO" ( TEMPO_TimeRange TEMPO_Line )
+_NL   tempo:("TEMPO" UTCStartStop TEMPO_Line ){return tempo}
 
 
 TEMPO_Line "Tempo Line" = 
-    __ line :(  WeatherGroup )
-
-
-TEMPO_TimeRange "TEMPO Group Valid Time" =
-    __ startTime:( DD HH ) "/" endTime: ( DD HH ) {
-    return {startTime,endTime}
-}
+    line :( WindGroup? VisibilityGroup? WeatherGroup? CloudObscurationGroup? LowLevelWindShearGroup? IcingGroup? TurbulenceGroup?) {
+		const [ dddff, vvvv, ww, nnnhhh, ...misc]=line
+		if(!dddff && !ww.some(el => el !== null) && !nnnhhh)throw new EncodingException({
+			type:'SyntaxException',
+            message:"Tempo groups should contain either wind speed, present weather or cloud cover",
+            found: location()
+            })
+		return line
+	}
 
 
 
 //-----------------------| Turbulence group (5BhBhBhBtL)| -------------------------------------
 
-//** ------------------------------------------------------------
 TAFTimes "Issue & Valid Time Period DDHHMMZ DDHH/DDHH" =
-    issued:TAF_IssueTime validPeriod:TAF_ValidPeriod { 
-        return {...issued, validPeriod }
-    }
-
-TAF_IssueTime "TAF Issue Time" = 
-    __ dateTime:( DD HH MM ) "Z" {
-        const {year,day} = options
-        // console.log(options)
-        const issued = new Date(Date.UTC(2021, 1, ...dateTime))
-        return { issued }
-    }
-
-TAF_ValidPeriod "TAF Valid Range" = 
-     __ startTime:( DD HH ) "/" endTime: ( DD HH ) {
-        const start = new Date(Date.UTC(2021,1, ...startTime))
-        const stop = new Date(Date.UTC(2021,1, ...endTime))//.getHours()
-        return { start, stop }
-     }
+    __ issued:( DD HH MM ) "Z" startAndStop:UTCStartStop { return [getUTCDate(issued), ...startAndStop] }
 
 
-DD 'Day'= 
-    dd:([0,1,2][0-9] / [3][0,1])  {return dd.join("")}
+UTCStartStop =    
+	__ start:( UTCDateHour ) "/" end: ( UTCDateHour ) {return [start, end]}
 
-HH 'Hour' = 
-    hh:([0,1][0-9] / [2][1,2,3,4]) {return hh.join("") }
+UTCDateHour = DDHH:(DD HH){return getUTCDate(DDHH)}
+ 
+DD = dd:([0,1,2][0-9] / [3][0,1])  {return dd.join("")}
 
-MM 'Minute' =
-    mm:([0,1,2,3,4,5,6][0-9]) { return mm.join("") }
+HH = hh:([0,1][0-9] / [2][1,2,3,4]) {return hh.join("") }
 
-
-
-
+MM = mm:([0,1,2,3,4,5,6][0-9]) { return mm.join("") }
 
 //** ----------------------| WX |----------------------
 WeatherGroup "\
@@ -244,18 +172,17 @@ Rain = wx:(("SH" / "FZ")? "RA" ("SN")?){return wx.join("")}
 
 // 4.) OBSCURATION
 Obscuration = 
-    __ wx:(Mist / Fog / Smoke / VolcanicAsh / WidespreadDust / Sand / Haze / Spray ){return wx}
+    __ wx:(Mist / Fog / Smoke / VolcanicAsh / WidespreadDust / Sand / Haze / Spray ){return wx.join("")}
 
 Mist = "BR"
 Fog = "FG"
 Smoke = "FU" 
 VolcanicAsh = "VA"
-WidespreadDust = wx:(("BL")?"DU"){return wx.join("")}
+WidespreadDust = wx:(("BL")?"DU")//{return wx.join("")}
 Sand ="SA"
 Haze = "HZ"
 Spray = "PY"
-
-BR = __ wx:"BR" {return wx}
+// BR = __ wx:"BR" {return wx}
 
 // OTHER
 
@@ -266,46 +193,34 @@ BR = __ wx:"BR" {return wx}
 
 WindGroup "1.3.4. Wind Group (dddffGfmfmKT). Surface wind direction, speed and gusts, if any." =
     __ 
-    direction:( ddd:([0,1,2][0-9][0] / [3][0,1,2][0] / "VRB" ) { 
-        if(ddd==="VRB") return ddd
-        return ddd.join("")
+    direction:( ddd:( Direction / "VRB" ) { 
+		return ddd
+        // if(ddd==="VRB") return ddd
+        // return ddd.join("")
     }) 
     speed:( Sustained / Gusting )  {
 
-        if(direction ==="VRB" && Number(speed)>6){
-            throw {
-                message:'\
-                    When wind speed will be more than 6 knots, do not use VRB for ddd \
-                    unless the situation involves air-mass thunderstorm activity during which \
-                    forecasting a prevailing wind direction with confidence is not possible. When it is \
-                    possible to forecast the peak gust direction, but not the prevailing direction, \
-                    encode the wind group as VRBffGfmfmKT and append the probable peak gust \
-                    direction to remarks (e.g., GST DRCTN 250).',
-                found: location()
-                
-            }
-
-        }
 
          return [direction,...speed]
      }
 
-
+Direction = ddd:([0,1,2][0-9][0] / [3][0-6][0]) {return ddd.join("")}
 
 
 Sustained =
-    windSpeed:(ValidWinds) "KT" {return [windSpeed]}
+    windSpeed:(ValidWinds) "KT" {return [windSpeed, null]}
 
 Gusting "Wind Gusts" =
     ff:ValidWinds "G" fm:ValidWinds "KT" {
         const ws = Number(ff)
         const wg = Number(fm)
-        if(ws>=wg) throw {
+
+        if(ws>=wg) throw new EncodingException({
+			type:'SyntaxException',
             message:"Forecast Gust Should be greater than Forecast Windspeeds",
             found: location()
-            }
+            })
         return [ff, fm]
-        // return (ws>=wg)
     }
 
 
@@ -326,20 +241,19 @@ VisibilityGroup "Visibility Group (VVVV)" =
         '8000' / '9000' / '9999') { 
 
             if (options.isConusLocation && vis === "4800") {
-                throw {
-                    message:"Note 1: Substitute 5000 meters for 4800 meters Outside the Continental\
-                            United States (OCONUS) locations based on the host-nation national\
-                            practice.",
-                    found: location()
-                }
-            } else if (!options.isConusLocation && vis === "5000") throw {
-                message:"Note 1: Substitute 5000 meters for 4800 meters Outside the Continental\
-                        United States (OCONUS) locations based on the host-nation national\
-                        practice.",
-                found: location()
-            }
+				throw new EncodingException({
+					type:'SyntaxException',
+					message:"Note 1: Substitute 5000 meters for 4800 meters Outside the Continental United States (OCONUS) locations based on the host-nation national practice.",
+					found: location()
+					})
+    
+            } else if (!options.isConusLocation && vis === "5000") throw new EncodingException({
+				type:'SyntaxException',
+				message:"Note 1: Substitute 5000 meters for 4800 meters Outside the Continental United States (OCONUS) locations based on the host-nation national practice.",
+				found: location()
+				})
 
-            return [Number(vis)] 
+            return Number(vis)
             }
 
 
@@ -391,39 +305,29 @@ CloudBase =
 
 
 //** ----------------------| ALTSG |----------------------
-Altsg =
+LowestAltimeterGroup "1.3.12. Lowest Altimeter group (QNHP1P1P1P1INS)" =
  __ "QNH" alt:("29"/ "30") stg:([0-9][0-9]) "INS" {
      return [Number([alt, stg.join("")].join("."))]
  }
 
 
-DateHourUTC = 
-    DDHH:(DD HH){
-        return new Date(Date.UTC(2021,1, ...DDHH))
 
-    }
 
 //** -------| Forecast Maximum and Minimum Temperature groups |--------------------
 
 
 TemperatureGroup "1.3.5.1. Forecast Maximum and Minimum Temperature groups (T(X)(N)[M]TFTF/YYGFGFZ)"= 
-    max: MaxTemp min: MinTemp {
-        const [Tx, Dx, Hx] = max
-        const [Tn, Dn, Hn] = min
-
-        return {TX:max,TN:min}
-    }
+MaxTemp MinTemp
 
 MaxTemp =
-    __ "TX" tx:Temperature "/" utc:DateHourUTC "Z" {
-
+    __ "TX" tx:Temperature "/" utc:UTCDateHour "Z" {
         const dt = Date(2024,)
-        return [tx, utc]
+        return ["TX",tx, utc]
     }
 
 MinTemp =
-     __ "TN" tx:Temperature "/" utc:DateHourUTC "Z" {
-         return [tx,utc]
+     __ "TN" tx:Temperature "/" utc:UTCDateHour "Z" {
+         return ["TN",tx,utc]
      }
 
 Temperature = 
