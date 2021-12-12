@@ -1,7 +1,7 @@
 import React from 'react';
 export const Expression = React.forwardRef(({ onKeyDown, value, onInput }: { onInput: any; onKeyDown: any; value: any }, ref: any) => {
 	return (
-		<div style={{ position: 'relative', width: 800, height: 200, border: 'solid red', backgroundColor: 'grey' }}>
+		<div style={{ position: 'relative', width: 800, height: 200, border: 'solid red', backgroundColor: 'grey', ...font }}>
 			<TextArea onInput={onInput} onKeyDown={onKeyDown} value={value} />
 			<PreFormatted>
 				<code ref={ref} className='language-html' id='highlighting-content'>
@@ -11,13 +11,12 @@ export const Expression = React.forwardRef(({ onKeyDown, value, onInput }: { onI
 		</div>
 	);
 });
+
 const TextArea = ({ ...props }) => (
 	<textarea
 		style={{
 			//
 			...positionDimensions,
-			// ...style,
-			// ...dims,
 			textTransform: 'uppercase',
 			zIndex: 1,
 			color: 'transparent',
@@ -42,7 +41,12 @@ const PreFormatted = ({ ...props }) => (
 		{...props}
 	/>
 );
-
+const font = {
+	fontSize: '12pt',
+	lineHeight: '20pt',
+	fontFamily: 'monospace',
+	tabSize: 2,
+};
 const positionDimensions: React.CSSProperties = {
 	position: 'absolute',
 	top: 0,
@@ -52,4 +56,5 @@ const positionDimensions: React.CSSProperties = {
 	padding: '10px',
 	height: '150px',
 	width: 'calc(100% - 32px)',
+	...font,
 };

@@ -15,34 +15,15 @@ body {
 	width: calc(100% - 32px);
 	height: 150px;
 } */
-#editing,
-#highlighting,
-#highlighting * {
-	/* Also add text styles to highlighing tokens */
-	font-size: 15pt;
-	font-family: monospace;
+/* #editing,
+#highlighting, */
+/* #highlighting * { */
+/* font-size: 15pt; */
+/* font-family: monospace;
 	line-height: 20pt;
 	tab-size: 2;
-}
-
-/* Move the textarea in front of the result */
-
-/* #editing {
-	z-index: 1;
-}
-#highlighting {
-	z-index: 0;
 } */
 
-/* Make textarea almost completely transparent */
-/* 
-#editing {
-	color: transparent;
-	background: transparent;
-	caret-color: white; 
-} */
-
-/* Can be scrolled */
 #editing,
 #highlighting {
 	overflow: auto;
