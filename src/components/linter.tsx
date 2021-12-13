@@ -2,15 +2,49 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Expression } from './expression';
 import Prism from 'prismjs';
 import { tafParser } from '../parsers';
+import { DateException } from '../exceptions';
+import type { Found } from '../exceptions';
+// import { DateException } from '../exceptions';
+import { DateValidator } from '../validators';
+// Expected,Found
 type LinterState = {
-	tafString: string;
+	tafString: string | any;
 	date: Date;
 	pass: null | any;
 	error: null | any;
 };
+const foundUnknown = {
+	start: {
+		offset: 0,
+		line: 0,
+		column: 0,
+	},
+	end: {
+		offset: 0,
+		line: 0,
+		column: 0,
+	},
+};
+// class LineValidator {
+// 	constructor(line) {
+// 		console.log(line);
+// 		return;
+// 	}
+// }
+
+function splitError(tafString, sliceOffset) {
+	const errorSection = tafString.slice(sliceOffset);
+	const endOfError = errorSection.match(/(?<=.[\t\n\r ])/).index;
+	const errorString = errorSection.slice(0, endOfError);
+	const restOfTAF = errorSection.slice(endOfError);
+
+	return [tafString.slice(0, sliceOffset), errorString, restOfTAF];
+}
 
 function useParser() {
 	const [{ pass, error, tafString, date }, setParserState] = useState<LinterState>({ pass: null, error: null, tafString: sampleTaf, date: new Date() });
+
+	const [errorString, setErrorString] = useState<null | any>(null);
 
 	const utcDateValues = useMemo(
 		() => ({
@@ -22,89 +56,122 @@ function useParser() {
 		}),
 		[date]
 	);
-	const onChange = useCallback((pass, error) => {
-		setParserState(({ ...oldState }) => ({ ...oldState, pass, error }));
-		if (!!error) {
-			//handle syntax highligting
-		}
-	}, []);
+	const onChange = useCallback(
+		(pass, error) => {
+			setParserState(({ ...oldState }) => ({ ...oldState, pass, error }));
+			if (!!error) {
+				try {
+					const { start } = error.location;
+					const [theStart, theError, theEnd] = splitError(tafString, start.offset);
+					setErrorString([theStart, theError, theEnd]);
+				} catch (e) {
+					console.log(error.type, error.location);
+				}
+			} else {
+				setErrorString(null);
+			}
+		},
+		[tafString]
+	);
+
 	const secondaryValidation = useCallback((validSyntax) => {
-		// throw new UserException({ message: "yerp" })
-		if (false)
-			throw new UserException({
-				type: 'yerp',
-				message: 'yerp',
-				expected: [{ type: 'string', description: 'string' }],
-				found: {
-					start: {
-						offset: 0,
-						line: 0,
-						column: 0,
-					},
-					end: {
-						offset: 0,
-						line: 0,
-						column: 0,
-					},
-				},
-			});
+		// const [[headerInformation, [start, stop], firstLine], mainBody, temperatureGroup] = validSyntax;
+		// const [TAF, AMD_COR, ICAO, issued] = headerInformation;
+
+		// const dv = new DateValidator([issued, start, stop], { AMD_COR }, () => {});
+
+		// if (!!mainBody) {
+		// 	mainBody.reduce((memo, [type, time, line]) => {
+		// 		switch (type) {
+		// 			case 'BECMG':
+		// 				dv.validateBECMG(time, (err) => {
+		// 					throw new DateException({ ...err, found: foundUnknown });
+		// 				});
+
+		// 				break;
+		// 			case 'TEMPO':
+		// 				break;
+		// 			default:
+		// 				break;
+		// 		}
+
+		// 		// console.log(memo, type, time, line);
+
+		// 		return [...memo, [type, time, line]];
+		// 	}, []);
+		// }
 
 		return validSyntax;
 	}, []);
+
+	// Expected,Found
+
 	useEffect(() => {
 		try {
 			const validSyntax = tafParser.parse(tafString.toUpperCase(), {
 				...utcDateValues,
+				validator,
 				icao: 'KADW',
 				AMD: false,
 				COR: false,
 				isConusLocation: true,
 			});
+
 			const success = secondaryValidation(validSyntax);
 
 			onChange(success, null);
 		} catch (e) {
-			// console.log
 			onChange(null, e);
 		}
 	}, [tafString, date, onChange, utcDateValues, secondaryValidation]);
 
-	return { pass, error, tafString, setParserState };
+	return { pass, error, tafString, setParserState, errorString };
 }
 
-type Found = {
-	start: {
-		offset: number;
-		line: number;
-		column: number;
-	};
-	end: {
-		offset: number;
-		line: number;
-		column: number;
-	};
-};
-type Expected = {
-	type: string;
-	description: string;
-}[];
-class UserException {
-	type: string;
-	message: string;
-	expected: Expected;
-	found: Found;
-	// location: object
-	constructor({ type, message, found, expected }: { type: string; message: string; found: Found; expected: Expected }) {
-		this.type = type;
-		this.message = message;
-		this.expected = expected;
-		this.found = found;
+const options = { isConusLocation: true };
+function validator(type: string, { found, value, location }: { found: Found; value: any; location: () => any }) {
+	console.log(type, found);
+	switch (type) {
+		case 'BECMG':
+			console.log(location());
+			const { time, line } = value;
+			const [start, end] = time;
+			if (new Date(start) >= new Date(end)) {
+			}
+			// throw new EncodingException({
+			//     message:`${type} Group START time should occur before the END time`,
+			//     expected:[{
+			//         type:"literal",
+			//         description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
+			//         ],
+			//     found: location()
+			//     });
+			break;
+		case 'TEMPO':
+			break;
+		case 'VVVV':
+			if (options.isConusLocation && value === 4800) {
+				throw new DateException({
+					// type:'SyntaxException',
+					message: 'Note 1: Substitute 5000 meters for 4800 meters Outside the Continental United States (OCONUS) locations based on the host-nation national practice.',
+					found,
+				});
+			} else if (!options.isConusLocation && value === 5000)
+				throw new DateException({
+					// type:'SyntaxException',
+					message: 'Note 1: Substitute 5000 meters for 4800 meters Outside the Continental United States (OCONUS) locations based on the host-nation national practice.',
+					found,
+				});
+			return;
+
+		default:
+			return;
 	}
 }
 
 export function Linter() {
 	const expressionRef: React.MutableRefObject<any> = useRef();
-	const { pass, error, tafString, setParserState } = useParser();
+	const { pass, error, tafString, errorString, setParserState } = useParser();
 
 	const update = (text: string) => {
 		if (text[text.length - 1] === '\n') {
@@ -114,19 +181,25 @@ export function Linter() {
 		// setCodeValue(({ ...old }) => ({ ...old, tafString: text }));
 		Prism.highlightElement(expressionRef.current);
 	};
-	console.log();
 	const onInput = (e) => {
 		var text: string = e.target.value;
 		update(text);
 	};
 	useEffect(() => {
 		if (!!error) {
-			console.log(error);
+			// console.log(error);
 			try {
 				error.expected.forEach((e) => {
 					try {
+						switch (e.type) {
+							case 'literal':
+								// console.log(e.text);
+								break;
+							default:
+								break;
+						}
 						const a = e.description.split(/\s*;\s*|\s*@\s*/);
-						console.log(a);
+						// console.log(a);
 						// const [expected, ref] = e.description.split(/\s*@\s*/);
 						// console.log([...expected.split(/\[.*\]/), ref]);
 					} catch (err) {
@@ -158,20 +231,25 @@ export function Linter() {
 
 	return (
 		<div>
-			<Expression ref={expressionRef} onInput={onInput} onKeyDown={onKeyDown} value={tafString} />
+			<Expression ref={expressionRef} onInput={onInput} onKeyDown={onKeyDown} value={tafString} errorOverlay={errorString} />
+			<PassFailDisplay pass={pass} error={error} />
+		</div>
+	);
+}
 
-			<div
-				//\
-				style={{
-					//
-					color: 'white',
-					position: 'relative',
-					width: 800,
-					border: `solid ${!!pass ? 'green' : 'red'}`,
-					backgroundColor: 'black',
-				}}>
-				{!!pass ? <Pass data={pass} /> : !!error ? <Fail data={error} /> : null}
-			</div>
+function PassFailDisplay({ pass, error }) {
+	return (
+		<div
+			//\
+			style={{
+				//
+				color: 'white',
+				position: 'relative',
+				width: 800,
+				border: `solid ${!!pass ? 'green' : 'red'}`,
+				backgroundColor: 'black',
+			}}>
+			{!!pass ? <Pass data={pass} /> : !!error ? <Fail data={error} /> : null}
 		</div>
 	);
 }
@@ -252,51 +330,63 @@ function Fail({ data }) {
 	);
 }
 
-// const style: React.CSSProperties = {
-//     position: 'absolute',
-//     top: 0,
-//     left: 0,
-// };
-// const dims: React.CSSProperties = {
-//     margin: '10px',
-//     padding: '10px',
-//     border: 0,
-//     width: 'calc(100% - 32px)',
-//     height: '150px',
-// };
-// const TextArea = ({ ...props }) => (
-//     <textarea
-//         style={{
-//             //
-//             ...style,
-//             ...dims,
-//             zIndex: 1,
-//             color: 'transparent',
-//             backgroundColor: 'transparent',
-//             caretColor: 'white',
-//         }}
-//         id='editing'
-//         spellCheck='false'
-//         {...props}
-//     />
-// );
-
-// const PreFormatted = ({ ...props }) => (
-//     <pre
-//         style={{
-//             //
-//             ...style,
-//             ...dims,
-//             zIndex: 0,
-//         }}
-//         id='highlighting'
-//         aria-hidden='true'
-//         {...props}
-//     />
-// );
+type TAFNDArray = [[string, number, number | null], number, WW, NsNsNshshshsCC];
 
 const sampleTaf = `\
 TAF KADW 280100Z 0701/0807 01010KT 8000 TSRA BKN030CB QNH2902INS
-BECMG 0716/0705 01015G17KT 9999 BKN020 BKN020 QNH2902INS
-BECMG 0704/0705 VRB06KT 9999 BKN020 QNH2902INS TX13/0421Z TNM03/0508Z\
+BECMG 0704/0705 01015G17KT 9999 BKN020 BKN020 QNH2902INS
+BECMG 0705/0706 VRB06KT 9999 BKN020 QNH2902INS TX13/0421Z TNM03/0508Z\
 `;
+// TAF (AMD or COR) CCCC YYGGggZ YYG1G1/YYG2G2
+//	dddffGfmfmKT VVVV
+// w’w’ NsNsNshshshsCC or VVhshshs or SKC (VAbbbttt) (WShxhxhx/dddfffKT)
+// (6IchihihitL) (5BhBhBhBtL) QNHP1P1P1P1INS (Remarks)
+// TTTTT YYGGGeGe or YYGG/YYGeGe ddffGfmfmKT…same as above… (Remarks)
+// TX(M)TFTF/YYGFGFZ TN(M)TFTF/YYGFGFZ
+
+type dddffGfmfmKT = [string, number, number];
+type VVVV = number;
+
+// Precipitation? Obscuration? Vicinity?
+type Obscuration = [];
+type Precipitation = [];
+type Vicinity = [];
+
+/**
+ * ```
+ * type WW = "NSW" | [[['+', 'TSRAGR']],[fg],[]] | null
+ * ```
+ * */
+type WW = [Precipitation | null, Obscuration | null, Vicinity | null] | string | null;
+
+/**
+ * EX:
+ * ```
+ * 'SKC'
+ * [ [...] null [...] ]
+ *
+ *
+ * 'BKN020CB BKN035 OVC050'
+ * [ [...] [null null null null [2000 true] 3500 null [5000 false]] [...] ]
+ * ```
+ * DESTRUCTURE:
+ * ```
+ * if(!!NsNsNshshshsCC){
+ * 	const [L1, L2, L3, L4, [L5, CB_Flag1], L6, L7, [L8, CB_Flag2]] = NsNsNshshshsCC
+ * }
+ * ```
+ */
+
+type NsNsNshshshsCC = [number, number, number, number, [number, boolean], number, number, [number, boolean]];
+type VVhshshs = [string, number];
+
+type PredominateLine = [dddffGfmfmKT, VVVV, WW, NsNsNshshshsCC | VVhshshs | null];
+type TemporaryLine = [dddffGfmfmKT | null, VVVV | null, WW | null, NsNsNshshshsCC | null];
+
+type Heading = [[string, string | null, string, Date], [Date, Date], PredominateLine];
+type ChangeLines = [string, [Date, Date], PredominateLine | TemporaryLine[]];
+
+type TX = [number, Date];
+type TN = [number, Date];
+
+type TAF = [Heading, ChangeLines[], [TX, TN]];

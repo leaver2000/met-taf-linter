@@ -7,9 +7,9 @@
 	}
     function validateTimes ( type, [ start, stop ]){
         // if start occur after stop
-        if (new Date(start) > new Date(stop))
+        if (new Date(start) >= new Date(stop))
             throw new EncodingException({
-                message:`${type} group start time begins after the endtime`,
+                message:`${type} Group START time should occur before the END time`,
                 expected:[{
                     type:"literal", 
                     description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
@@ -65,7 +65,10 @@ RUN = MessageHeading ((BecomingGroup / TemporaryGroup)+)? TemperatureGroup
 
 //** ----| Message Heading (TAF [AMD or COR] CCCC YYGGggZ YYG1G1/YYG2G2). |---------
 
-MessageHeading = header:(("TAF" AMD_COR? CCCC) Issued Period PredominateLine) { return header }
+MessageHeading = 
+    header:("TAF" AMD_COR? CCCC Issued)
+    pd:Period
+    line: PredominateLine { return [header, pd,line] }
 
 CCCC "ICAO; CCCC @AFMAN 15-124 1.3.2.1.3" = __
     cccc:( [A-Z][A-Z][A-Z][A-Z] )  { return cccc.join("") }
@@ -82,9 +85,13 @@ Period "Valid Period YYG1G1/YYG2G2 as [DDHH/DDHH] @AFMAN 15-124 1.3.2.1.5."= __
 //** ------------------------|  BecomingGroup   |------------------------------------    
 BecomingGroup = _NewLine 
     type:"BECMG" time:UTCStartStop line:PredominateLine  {
+        const found = location()
+        
         const [ start, stop ] = time;
-        const hours = Math.abs(start - stop) / 36e5;
+        // const hours = Math.abs(start - stop) / 36e5;
         validateTimes("BECMG",time)
+
+        options.validator('BECMG',{location,found:location,value:{ time, line }})
         return [ type, time, line ]
     }
 
@@ -153,44 +160,124 @@ Thickness = tL:([0-9]){return Number(tL)*1000}
 
 
 //** ----------------------| WX |----------------------
-WeatherGroup "\
-[Weather (w'w') Group]: intensity/proximity, followed by description,followed by precipitation type \
-(two precipitation types can be used in the same w'w' group), obscuration, or \
-other weather phenomena (e.g., +SHRA is heavy showers of rain, +TSRAGR is \
-thunderstorms, heavy rain, and hail; -RASN is light rain and snow; TS is\
-thunderstorm without precipitation)."= 
-    allPossibleWXConditions:( Precipitation? Obscuration? Vicinity? ) {return allPossibleWXConditions} 
-// -----------------| QUALIFIERS |-----------------
+//  "\
+// [Weather (w'w') Group]: intensity/proximity, followed by description,followed by precipitation type \
+// (two precipitation types can be used in the same w'w' group), obscuration, or \
+// other weather phenomena (e.g., +SHRA is heavy showers of rain, +TSRAGR is \
+// thunderstorms, heavy rain, and hail; -RASN is light rain and snow; TS is\
+// thunderstorm without precipitation).
+WeatherGroup = 
+    ww:( FunnelCloud? Precipitation? Obscuration? Vicinity? Other? ) {
 
-Intensity =("-"/"+")
-Vicinity = 
-    __ wx:("VC" ("TS" / "SH" / "FG" / ("BL" ("SN" / "DU" / "SA")) / "PO" / "SS" / "DS" )){return wx.flat().join("")}
-// 2.) DESCRIPTORS
+        if (ww.filter(n => n).length>3)
+        throw new EncodingException({
+			type:'EncodingException',
+            message:"When more than one weather or obscuration condition.\
+            exists, limit the w'w' group to three groups.When more than three\
+            w'w' groups apply to a situation, select and encode the three w'w'\
+            that are most significant to operations.",
+            expected:[{type:"other", description:"do not encode more than 3 w'w' groups @AFMAN 15-124 1.3.6.2."}],
+            found: location()
+            })
+        // 
+        return ww} 
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// 1.) DESCRIPTORS ///////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+Vicinity = __ 
+    ww:("VC" ("TS" / "SH" / "FG" / ("BL" ("SN" / "DU" / "SA")) / "PO" / "SS" / "DS" )){return ww.flat().join("")};
+
+// Intensity = (LGT/HVY)?
+// HVY = "+"
+// LGT = "-"
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// 2.) DESCRIPTORS ///////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+// MI "Shallow" = "MI" 
+// PR "Partial (covering part of the aerodrome)" = "PR"
+// SH "Shower(s)" = "SH"
+// TS "Thunderstorm" = "TS"
+// FZ "Freezing" = "FZ"
+// BL "Blowing"  = "BL"
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// 3.) PRECIPITATION /////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+Precipitation = __ 
+    ww:(( "+" / "-" )? ( ThunderStorms / SnowPellets / Snow / Drizzle / Rain  ) ) { return ww };
+
+/////////////////////////////////////////////////////////////////////////////////////////////v 
+
 ThunderStorms =
-    ts:(Intensity? "TS" ("RA" / "SN")? ("GR")?){return ts}
+    ww:("TS" ("RA" / "SN")? ("GR")?){return ww.join("")};
 
-// ---------------- |   WEATHER PHENOMENA | ---------------------
-// 3.) PRECIPITATION
-Precipitation = 
-    __ p:(Intensity? (ThunderStorms / "DZ" / Rain) ) {return p}
+SnowPellets = 
+    ww:(("SN")? "GS"){return ww.join("")};
 
-Rain = wx:(("SH" / "FZ")? "RA" ("SN")?){return wx.join("")}
+Snow = 
+    ww:(("SH" / "RA")? "SN") {return ww.join("")};
 
-// 4.) OBSCURATION
-Obscuration = 
-    __ wx:(Mist / Fog / Smoke / VolcanicAsh / WidespreadDust / Sand / Haze / Spray ){return wx}
+Rain = 
+    ww:(("SH" / "FZ")? "RA")   {return ww.join("")};
+
+Drizzle = 
+    ww:(("FZ")? "DZ"){return ww.join("")};
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+// DZ "Drizzle" = "DZ"
+// SN "Snow" = "SN"
+SG "Snow Grains" = "SG"
+IC "Ice Crystals (Diamond Dust)" = "IC"
+PL "Ice Pellets" = "PL"
+// GR "Hail" = "GR"
+// GS "Snow Pellets " = "GS"
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// 4.) OBSCURATIONS //////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+Obscuration = __ 
+    ww:(Mist / Fog / Smoke / VolcanicAsh / Dust / Sand / Haze / Spray ){return ww};
+
+Dust = 
+    ww:(("BL")?"DU"){return ww.join("")}
+
+Spray = 
+    ww:(("BL")?"PY"){return ww.join("")}
 
 Mist = "BR"
 Fog = "FG"
-Smoke = "FU" 
+Smoke ="FU" 
 VolcanicAsh = "VA"
-WidespreadDust = wx:(("BL")?"DU")//{return wx.join("")}
 Sand ="SA"
 Haze = "HZ"
-Spray = "PY"
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+// BR = "BR"
+// FG = "FG"
+// FU = "FU" 
+// VA = "VA"
+// DU = "DU"
+// SA = "SA"
+// HZ = "HZ"
+// PY = "PY"
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// 5.) OTHER /////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+FunnelCloud = __
+    ww: (("+")? "FC") {return ww};
 
+Other = __
+    ww:( "SQ" / "PO" / "SS" / "DS" ){return ww};
+
+//////////////////////////////////////////////////////
 
 
 //** ----------------------| WIND GROUP |----------------------
@@ -205,7 +292,7 @@ WindGroup "WindGroup Surface wind direction, speed and gusts, if any; dddffGfmfm
             found: location()
             })
          return [direction,...speed]
-     }
+     };
 
 Direction = 
     ddd:((azi:([0,1,2][0-9][0] / [3][0-6][0]) {return azi.join("")})/ "VRB"){return ddd}
@@ -232,8 +319,8 @@ Wind = wind:( [1,2][0-9][0-9] / [0-9][0-9] ) {return Number(wind.join(""))}
 //** ----------------------| Visibility Group (VVVV) |----------------------
 ZZ = [0][0]
 
-VisibilityGroup "Visibility Group (VVVV)" = 
-    __ vis: (
+VisibilityGroup "Visibility Group (VVVV)" = __  
+    value: (
         [0][0-9]ZZ /
         [1][1-9]ZZ /
         [2][2,4,6,8]ZZ /
@@ -242,53 +329,62 @@ VisibilityGroup "Visibility Group (VVVV)" =
         [5-9][0]ZZ / 
         [9][9][9][9]
         ) { 
-            vis = Number(vis.flat().join(""))
+            value = Number(value.flat().join(""))
+            const foundLocation = location()
+            // console.log(foundLocation)
+            options.validator("VVVV",{foundLocation, value})
 
-            if (options.isConusLocation && vis === 4800) {
-				throw new EncodingException({
-					type:'SyntaxException',
-					message:"Note 1: Substitute 5000 meters for 4800 meters Outside the Continental United States (OCONUS) locations based on the host-nation national practice.",
-					found: location()
-					})
+            // if (options.isConusLocation && vis === 4800) {
+			// 	throw new EncodingException({
+			// 		type:'SyntaxException',
+			// 		message:"Note 1: Substitute 5000 meters for 4800 meters Outside the Continental United States (OCONUS) locations based on the host-nation national practice.",
+			// 		found: location()
+			// 		})
     
-            } else if (!options.isConusLocation && vis === 5000) throw new EncodingException({
-				type:'SyntaxException',
-				message:"Note 1: Substitute 5000 meters for 4800 meters Outside the Continental United States (OCONUS) locations based on the host-nation national practice.",
-				found: location()
-				})
+            // } else if (!options.isConusLocation && vis === 5000) throw new EncodingException({
+			// 	type:'SyntaxException',
+			// 	message:"Note 1: Substitute 5000 meters for 4800 meters Outside the Continental United States (OCONUS) locations based on the host-nation national practice.",
+			// 	found: location()
+			// 	})
 
-            return vis
+            return value
             }
-
-
 
 //** ----------------------| CloudObscurationGroup (NsNsNshshshsCC). |----------------------
 
 
-CloudObscurationGroup = SKC / VV / (FEW?FEW?SCT?SCT?BKN?BKN?BKN?OVC?) 
+CloudObscurationGroup = SKC / VV / ( FEW? FEW? SCT? SCT? BKNCB? BKN? BKN? OVC? ) 
 
-VV = __ nnn:("VV" CloudBase){ return [[nnn]] }
+VV = __ 
+    nnn:("VV" CloudBase){ return [[nnn]] }
 
-SKC =   
-__ skc:("SKC"){return [skc]}
+SKC = __ 
+    skc:("SKC"){return [skc]}
 
-FEW "(FEW = trace to 2/8ths);"=
-__ nnn: "FEW" base:CloudBase { return [nnn,...base] }
 
-SCT "(SCT = 3/8ths to 4/8ths)"=
-__ nnn: "SCT" base:CloudBase { return [nnn,...base] }
+// Octaves = ( FEW? FEW? SCT? SCT? BKNCB? BKN? BKN? OVC? ) 
 
-BKN "(BKN = 5/8ths to 7/8ths)" = 
-__ nnn: "BKN" base:CloudBase { return [nnn,...base] }
+FEW "(FEW = trace to 2/8ths);"= __
+    nnn: "FEW" base:CloudBase { return base }
+
+SCT "(SCT = 3/8ths to 4/8ths)"= __ 
+    nnn: "SCT" base:CloudBase { return base }
+
+BKN "(BKN = 5/8ths to 7/8ths)" = __
+    nnn: "BKN" base:CloudBase { return base }
+
+BKNCB = BKN CB? 
+
+
+
 
 OVC "(OVC = 8/8ths);" = 
-__ nnn: "OVC" base:CloudBase { return [[nnn,...base]] }
+__ nnn: "OVC" base:CloudBase cb:CB?  { return [base, cb] }
 
-CloudBase = 
-    base:([0,1,2,3][0-9][0-9])tsFlag:'CB'? {
-        if(!!tsFlag) return [Number(base.join("")*100), true]
-        return [Number(base.join("")*100), false]
-        }
+
+CB = cb:"CB"{return true}
+CloudBase 'no' = base:( [0,1,2][0-9][0-9] / [3][0-9][0] ){return Number(base.join("")*100) }
+
 
 
 //** ----------------------| ALTSG |----------------------
@@ -321,6 +417,7 @@ Temperature =
      }
 
 //-----------------------|      UTC        | -------------------------------------
+
 UTCStartStop = __
     start: ( UTCDateHour ) "/" 
     end: ( UTCDateHour ) {return [start, end]}
@@ -335,6 +432,6 @@ MM = mm:([0,1,2,3,4,5,6][0-9]) { return mm.join("") }
 
 //** --------------------------| Indicators |----------------------------------
 //Single Whitespace
-__ = [ \t\n\r ] 
+__ = [ \t\n\r ]
 //New Line
 _NewLine  =  [\n]
