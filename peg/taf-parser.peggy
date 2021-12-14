@@ -56,9 +56,18 @@
 			this.message = message
 			this.expected = expected
 			this.found = found
+			
 		}
 	}
-
+	class GeneralException {
+        name = "GeneralException"
+		constructor({ message, expected, found , location }) {
+			this.message = message
+			this.expected = expected
+			this.location = location
+			
+		}
+	}
 }
 //!! ERROR ERPORTING FORMAT [ HumanReadableError ; AutoText @ Reference ]
 RUN = MessageHeading ((BecomingGroup / TemporaryGroup)+)? TemperatureGroup
@@ -66,9 +75,15 @@ RUN = MessageHeading ((BecomingGroup / TemporaryGroup)+)? TemperatureGroup
 //** ----| Message Heading (TAF [AMD or COR] CCCC YYGGggZ YYG1G1/YYG2G2). |---------
 
 MessageHeading = 
-    header:("TAF" AMD_COR? CCCC Issued)
-    pd:Period
-    line: PredominateLine { return [header, pd,line] }
+    type:("TAF" AMD_COR? CCCC Issued)
+    time:Period
+    line: PredominateLine { 
+		options.validate.line("HEAD", {time, line}, location() )
+
+        return [ type, time, line ]
+
+		// return [header, pd,line]
+	 }
 
 CCCC "ICAO; CCCC @AFMAN 15-124 1.3.2.1.3" = __
     cccc:( [A-Z][A-Z][A-Z][A-Z] )  { return cccc.join("") }
@@ -84,14 +99,12 @@ Period "Valid Period YYG1G1/YYG2G2 as [DDHH/DDHH] @AFMAN 15-124 1.3.2.1.5."= __
 
 //** ------------------------|  BecomingGroup   |------------------------------------    
 BecomingGroup = _NewLine 
-    type:"BECMG" time:UTCStartStop line:PredominateLine  {
-        const found = location()
-        
-        const [ start, stop ] = time;
-        // const hours = Math.abs(start - stop) / 36e5;
-        validateTimes("BECMG",time)
+    type:"BECMG"
+	time:UTCStartStop 
+	line:PredominateLine  {
+		options.validate.line("BECMG", {time, line} , location())
 
-        options.validator('BECMG',{location,found:location,value:{ time, line }})
+
         return [ type, time, line ]
     }
 
@@ -102,8 +115,31 @@ TemporaryGroup = _NewLine
         }
 
 //** -----------------------|   PredominateLine  |-----------------------------------
-PredominateLine = 
-    WindGroup VisibilityGroup WeatherGroup CloudObscurationGroup VolcanicAshGroup? LowLevelWindShearGroup? IcingGroup? TurbulenceGroup? LowestAltimeterGroup
+
+PredominateLine = p:Primary s:Secondary{return [...p,...s]}
+
+
+Primary = p:( WindGroup VisibilityGroup ) ww:(WW_NsNsNshshshsCC){
+	
+	return [...p,...ww]
+}
+
+WW_NsNsNshshshsCC = ww:(WeatherGroup CloudObscurationGroup){
+	// const validated = options.validate.tsRemark(ww)
+	// if(!!validated)throw new peg$SyntaxError(...validated,location())
+	return ww
+}
+
+
+
+
+Secondary = (		
+	VolcanicAshGroup? 
+	LowLevelWindShearGroup? 
+	IcingGroup? 
+	TurbulenceGroup? 
+	LowestAltimeterGroup)
+
 //** -----------------------|   TemporaryLine  |-----------------------------------
 TemporaryLine = 
     line :( WindGroup? VisibilityGroup? WeatherGroup? CloudObscurationGroup? LowLevelWindShearGroup? IcingGroup? TurbulenceGroup?) {
@@ -116,6 +152,20 @@ TemporaryLine =
             // console.log(vvvv,misc )
 		return line
 	}
+
+// PresentWeatherGroup = vis: VisibilityGroup  wx:WeatherGroup {
+// 	var presWx = wx.filter(f=>f)
+// 	if (presWx.length ===0) presWx = null
+// 	const value = [vis, presWx]
+
+
+
+
+
+// 	return value
+
+// }
+
 //** -------|  1.3.9. Operationally significant/Hazardous weather Groups.   |----------------------
 // 1.3.9. Operationally significant/Hazardous weather Groups. Volcanic ash and wind shear are
 // potentially hazardous problems for aircraft. Include forecasts for ash and non-convective wind
@@ -209,7 +259,7 @@ Vicinity = __
 //////////////////////////////////// 3.) PRECIPITATION /////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 Precipitation = __ 
-    ww:(( "+" / "-" )? ( ThunderStorms / SnowPellets / Snow / Drizzle / Rain  ) ) { return ww };
+    ww:(( "+" / "-" )? ( ThunderStorms / SnowPellets / Snow / Drizzle / Rain  ) ) { return ww.join("") };
 
 /////////////////////////////////////////////////////////////////////////////////////////////v 
 
@@ -242,7 +292,7 @@ PL "Ice Pellets" = "PL"
 //////////////////////////////////// 4.) OBSCURATIONS //////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 Obscuration = __ 
-    ww:(Mist / Fog / Smoke / VolcanicAsh / Dust / Sand / Haze / Spray ){return ww};
+    ww:( Mist / Fog / Smoke / VolcanicAsh / Dust / Sand / Haze / Spray ){return ww};
 
 Dust = 
     ww:(("BL")?"DU"){return ww.join("")}
@@ -250,8 +300,9 @@ Dust =
 Spray = 
     ww:(("BL")?"PY"){return ww.join("")}
 
+Fog = ww:(( "PR" / "BC" / "MI") "FG") { return ww.join("")}
+
 Mist = "BR"
-Fog = "FG"
 Smoke ="FU" 
 VolcanicAsh = "VA"
 Sand ="SA"
@@ -319,6 +370,9 @@ Wind = wind:( [1,2][0-9][0-9] / [0-9][0-9] ) {return Number(wind.join(""))}
 //** ----------------------| Visibility Group (VVVV) |----------------------
 ZZ = [0][0]
 
+
+// UnrestrictedVisibility = __ vvvv: "9999" { return Number(vvvv) }
+
 VisibilityGroup "Visibility Group (VVVV)" = __  
     value: (
         [0][0-9]ZZ /
@@ -326,13 +380,14 @@ VisibilityGroup "Visibility Group (VVVV)" = __
         [2][2,4,6,8]ZZ /
         [3][2,4,6,7]ZZ /
         [4][0,4,5,7,8]ZZ /
-        [5-9][0]ZZ / 
-        [9][9][9][9]
+        [5-9][0]ZZ /
+		[9][9][9][9]
         ) { 
-            value = Number(value.flat().join(""))
-            const foundLocation = location()
+            value = [Number(value.flat().join(""))]
+            // const foundLocation = location()
+			
             // console.log(foundLocation)
-            options.validator("VVVV",{foundLocation, value})
+            // options.validator("VVVV",{foundLocation, value})
 
             // if (options.isConusLocation && vis === 4800) {
 			// 	throw new EncodingException({
@@ -353,37 +408,53 @@ VisibilityGroup "Visibility Group (VVVV)" = __
 //** ----------------------| CloudObscurationGroup (NsNsNshshshsCC). |----------------------
 
 
-CloudObscurationGroup = SKC / VV / ( FEW? FEW? SCT? SCT? BKNCB? BKN? BKN? OVC? ) 
+CloudObscurationGroup = SKC / VV / Octaves
+
+SKC = __ 
+	skc:("SKC"){return [skc]}
+
+Octaves = NNNhhh:( FEW? FEW? SCTCB? SCT? BKNCB? BKN? BKN? OVC? ) {return NNNhhh.filter(f=>f)}
 
 VV = __ 
     nnn:("VV" CloudBase){ return [[nnn]] }
 
-SKC = __ 
-    skc:("SKC"){return [skc]}
+
+
+
+
 
 
 // Octaves = ( FEW? FEW? SCT? SCT? BKNCB? BKN? BKN? OVC? ) 
 
 FEW "(FEW = trace to 2/8ths);"= __
-    nnn: "FEW" base:CloudBase { return base }
+    nnn: "FEW" hhh:CloudBase { return [nnn, hhh] }
 
+////////////////|	 SCATTERED		|//////////////
 SCT "(SCT = 3/8ths to 4/8ths)"= __ 
-    nnn: "SCT" base:CloudBase { return base }
+    nnn: "SCT" hhh:CloudBase { return [nnn, hhh] }
 
+SCTCB =  
+	nnnHHH: SCT 
+	cb:CB?  { return [...nnnHHH, cb] }
+
+////////////////|	 BROKEN		|//////////////
 BKN "(BKN = 5/8ths to 7/8ths)" = __
-    nnn: "BKN" base:CloudBase { return base }
+    nnn: "BKN" hhh:CloudBase { return [ nnn,hhh ] }
 
-BKNCB = BKN CB? 
+BKNCB =  
+	nnnHHH: BKN 
+	cb:CB?  { return [...nnnHHH, cb] }
 
 
 
 
-OVC "(OVC = 8/8ths);" = 
-__ nnn: "OVC" base:CloudBase cb:CB?  { return [base, cb] }
+
+OVC "(OVC = 8/8ths);" = __
+	nnn: "OVC" hhh:CloudBase cb:CB?  { return [nnn, hhh, cb] }
 
 
 CB = cb:"CB"{return true}
-CloudBase 'no' = base:( [0,1,2][0-9][0-9] / [3][0-9][0] ){return Number(base.join("")*100) }
+CloudBase = base:( [0,1,2][0-9][0-9] / [3][0-9][0] ){return Number(base.join("")*100) }
 
 
 
