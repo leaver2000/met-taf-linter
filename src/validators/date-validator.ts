@@ -1,22 +1,22 @@
-import { DateException } from '../exceptions';
+// import { DateException } from '../exceptions';
 
 const HOURS = {
-    thirty: 1.08e8,
-    twentyFour: 8.64e7,
+	thirty: 1.08e8,
+	twentyFour: 8.64e7,
 };
 
-const foundUnknown = {
-    start: {
-        offset: 0,
-        line: 0,
-        column: 0,
-    },
-    end: {
-        offset: 0,
-        line: 0,
-        column: 0,
-    },
-};
+// const foundUnknown = {
+// 	start: {
+// 		offset: 0,
+// 		line: 0,
+// 		column: 0,
+// 	},
+// 	end: {
+// 		offset: 0,
+// 		line: 0,
+// 		column: 0,
+// 	},
+// };
 /**
  *
  * MESSAGE HEADING:
@@ -28,94 +28,106 @@ TTTTT YYGGGeGe or YYGG/YYGeGe ddffGfmfmKT…same as above… (Remarks)
 TX(M)TFTF/YYGFGFZ TN(M)TFTF/YYGFGFZ**
 
  */
+type ErrorLocation = {
+	end: { offset: number; line: number; column: number };
+	start: { offset: number; line: number; column: number };
+};
 const expected = [{ type: 'string', description: 'string' }];
 export default class DateValidator {
-    start: Date;
-    startTime: number;
+	issued: Date;
+	issuedTime: number;
 
-    stop: Date;
-    stopTime: number;
+	start: Date;
+	startTime: number;
 
-    lastBECMG: { begin: Date; end: Date } | null;
-    lastTEMPO: { begin: Date; end: Date } | null;
+	stop: Date;
+	stopTime: number;
 
-    location: () => void;
+	lastBECMG: { begin: Date; end: Date } | null;
+	lastTEMPO: { begin: Date; end: Date } | null;
 
-    // issued: Date;
-    constructor([issued, start, stop]: [Date, Date, Date], { AMD_COR }: { AMD_COR: boolean }, location: () => void) {
-        this.start = start;
-        this.startTime = start.getTime();
+	// location: () => void;
 
-        this.stop = stop;
-        this.stopTime = stop.getTime();
+	// issued: Date;
+	constructor(issued: Date, start: Date, stop: Date, { AMD_COR }: { AMD_COR: boolean }, onError: OnErrorProps) {
+		this.issued = issued;
+		this.issuedTime = issued.getTime();
 
-        this.lastBECMG = null;
-        this.lastTEMPO = null;
+		this.start = start;
+		this.startTime = start.getTime();
 
-        this.location = location;
+		this.stop = stop;
+		this.stopTime = stop.getTime();
 
-        if (!!AMD_COR) {
-        } else this.__init_standard();
+		this.lastBECMG = null;
+		this.lastTEMPO = null;
+		if (false) onError('Message', [{ type: '', description: '' }]);
 
-        return;
-    }
-    __init_standard() {
-        const { startTime, stopTime } = this;
-        if (stopTime - startTime === HOURS.thirty) return;
-        // if the taf is not valid for exactly 30hours throw DateException
-        // throw new DateException({
-        // 	message: '1.3.1.1. Make all TAFs valid for a 30-hour forecast period. maybe you want to COR or AMD',
-        // 	expected: [{ type: 'string', description: 'string' }],
-        // 	found: '',
-        // });
-    }
-    __init_non_standard() {
-        const { startTime, stopTime } = this;
-        if (startTime - stopTime > HOURS.thirty) {
-        }
-    }
-    /**
-     * validates that the YYGG/YYGeGe occurs beteen the YYGGggZ
-     *
-     * @AFMAN 15-124
-     * 1.3.1.1. Make all TAFs valid for a 30-hour forecast period.
-     *``` code
-     *
-     *```
-     */
-    validateBECMG([from, to]: [Date, Date], onError: ({ message, expected }) => void) {
-        const { startTime, stopTime, lastBECMG } = this;
-        this.lastTEMPO = null;
+		if (!!AMD_COR) this.__init_standard();
+		else this.__init_standard();
 
-        if (!!lastBECMG && lastBECMG.end > from) {
-            const message = 'BECMG valid times should NOT occur within the valid time of the previous BECMG line';
-            onError({ message, expected });
-        }
+		return;
+	}
+	__init_standard() {
+		const { startTime, stopTime } = this;
+		if (stopTime - startTime === HOURS.thirty) return;
+		// if the taf is not valid for exactly 30hours throw DateException
+		// throw new DateException({
+		// 	message: '1.3.1.1. Make all TAFs valid for a 30-hour forecast period. maybe you want to COR or AMD',
+		// 	expected: [{ type: 'string', description: 'string' }],
+		// 	found: '',
+		// });
+	}
+	__init_non_standard() {
+		const { startTime, stopTime } = this;
+		if (startTime - stopTime > HOURS.thirty) {
+		}
+	}
+	/**
+	 * validates that the YYGG/YYGeGe occurs beteen the YYGGggZ
+	 *
+	 * @AFMAN 15-124
+	 * 1.3.1.1. Make all TAFs valid for a 30-hour forecast period.
+	 *``` code
+	 *
+	 *```
+	 */
+	validateBECMG(from: Date, to: Date, onError: OnErrorProps) {
+		// console.log(from, to);
+		const { startTime, stopTime, lastBECMG } = this;
+		this.lastTEMPO = null;
 
-        // "FROM" AND "TO" TIME OCCUR WITHIN THE 30 HOUR TAF VALID TIME
-        const fromIsValid = from.getTime() >= startTime && from.getTime() <= stopTime;
-        const toIsValid = to.getTime() >= startTime && to.getTime() <= stopTime;
+		if (!!lastBECMG && lastBECMG.end > from) {
+			const message = 'BECMG valid times should NOT occur within the valid time of the previous BECMG line';
+			// console.log(message);
+			onError(message, expected);
+		}
 
-        // IF BOTH FROM AND TO ARE VALID....
-        // THE DATES ARE SET AND USED IN VALIDATION FOR THE NEXT LINE
-        if (fromIsValid && toIsValid) this.lastBECMG = { begin: from, end: to };
-        else {
-            const message = 'BECMG Valid times should occur within the TAF validTime';
-            onError({ message, expected });
-        }
-    }
-    validateTEMPO([from, to]: [Date, Date]) {
-        const { start, stop } = this;
+		// "FROM" AND "TO" TIME OCCUR WITHIN THE 30 HOUR TAF VALID TIME
+		const fromIsValid = from.getTime() >= startTime && from.getTime() <= stopTime;
+		const toIsValid = to.getTime() >= startTime && to.getTime() <= stopTime;
 
-        const fromIsValid = from.getTime() >= start.getTime() && from.getTime() <= stop.getTime();
-        const toIsValid = to.getTime() >= start.getTime() && to.getTime() <= stop.getTime();
-        if (fromIsValid && toIsValid) return;
-        // else
-        // 	throw new DateException({
-        // 		message: 'TEMPO Valid times should occur within the TAF validTime',
-        // 		expected: [{ type: 'string', description: 'string' }],
-        // 		found: foundUnknown,
-        // 	});
-    }
+		// IF BOTH FROM AND TO ARE VALID....
+		// THE DATES ARE SET AND USED IN VALIDATION FOR THE NEXT LINE
+		if (fromIsValid && toIsValid) this.lastBECMG = { begin: from, end: to };
+		else {
+			const message = 'BECMG Valid times should occur within the TAF validTime';
+			onError(message, expected);
+		}
+	}
+	validateTEMPO(from: Date, to: Date, onError: OnErrorProps) {
+		const { start, stop } = this;
+
+		const fromIsValid = from.getTime() >= start.getTime() && from.getTime() <= stop.getTime();
+		const toIsValid = to.getTime() >= start.getTime() && to.getTime() <= stop.getTime();
+		if (fromIsValid && toIsValid) return;
+		// else
+		// 	throw new DateException({
+		// 		message: 'TEMPO Valid times should occur within the TAF validTime',
+		// 		expected: [{ type: 'string', description: 'string' }],
+		// 		found: foundUnknown,
+		// 	});
+	}
 }
-// export {};
+
+type OnErrorProps = (message: string, expected: { type: string; description: string }[]) => void;

@@ -5,51 +5,63 @@
 		const { year, month } = options
 		return new Date(Date.UTC(year,month,...DDHHMM))//.g
 	}
-    function validateTimes ( type, [ start, stop ]){
-        // if start occur after stop
-        if (new Date(start) >= new Date(stop))
-            throw new EncodingException({
-                message:`${type} Group START time should occur before the END time`,
-                expected:[{
-                    type:"literal", 
-                    description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
-                    ],
-                found: location()
-                });
-
-        const diffrence = Math.abs(start - stop) / 36e5;
-        switch(type){
-            case 'BECMG':
-            //if diffrence is greater than 2
-            if ( diffrence > 2 ) 
-                throw new EncodingException({
-                    message:"The time-period described by a BECMG group is usually for one hour but never exceeds two hours",
-                    expected:[{
-                        type:"literal", 
-                        description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
-                        ],
-                    found: location()
-                    });
-
-                break
-            case 'TEMPO':
-            //if diffrence is greater than 2
-            if ( diffrence > 2 ) 
-                throw new EncodingException({
-                    message:"The time-period described by a BECMG group is usually for one hour but never exceeds two hours",
-                    expected:[{
-                        type:"literal", 
-                        description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
-                        ],
-                    found: location()
-                    });
-
-                break
-            default:
-                return
+    function getLocation(value){
+        return {
+            value,
+            range:range()
         }
-  
     }
+    function getRange(value){
+        return {
+            value,
+            range:range()
+        }
+    }
+    // function validateTimes ( type, [ start, stop ]){
+    //     // if start occur after stop
+    //     if (new Date(start) >= new Date(stop))
+    //         throw new EncodingException({
+    //             message:`${type} Group START time should occur before the END time`,
+    //             expected:[{
+    //                 type:"literal", 
+    //                 description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
+    //                 ],
+    //             found: location()
+    //             });
+
+    //     const diffrence = Math.abs(start - stop) / 36e5;
+    //     switch(type){
+    //         case 'BECMG':
+    //         //if diffrence is greater than 2
+    //         if ( diffrence > 2 ) 
+    //             throw new EncodingException({
+    //                 message:"The time-period described by a BECMG group is usually for one hour but never exceeds two hours",
+    //                 expected:[{
+    //                     type:"literal", 
+    //                     description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
+    //                     ],
+    //                 found: location()
+    //                 });
+
+    //             break
+    //         case 'TEMPO':
+    //         //if diffrence is greater than 2
+    //         if ( diffrence > 2 ) 
+    //             throw new EncodingException({
+    //                 message:"The time-period described by a BECMG group is usually for one hour but never exceeds two hours",
+    //                 expected:[{
+    //                     type:"literal", 
+    //                     description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
+    //                     ],
+    //                 found: location()
+    //                 });
+
+    //             break
+    //         default:
+    //             return
+    //     }
+  
+    // }
 	class EncodingException {
         type = "EncodingException"
 		constructor({ message, expected, found  }) {
@@ -59,112 +71,105 @@
 			
 		}
 	}
-	class GeneralException {
-        name = "GeneralException"
-		constructor({ message, expected, found , location }) {
-			this.message = message
-			this.expected = expected
-			this.location = location
-			
-		}
-	}
+
 }
 //!! ERROR ERPORTING FORMAT [ HumanReadableError ; AutoText @ Reference ]
-RUN = MessageHeading ((BecomingGroup / TemporaryGroup)+)? TemperatureGroup
+RUN = MessageHeading (( BecomingGroup / TemporaryGroup )+)? TemperatureGroup
 
 //** ----| Message Heading (TAF [AMD or COR] CCCC YYGGggZ YYG1G1/YYG2G2). |---------
 
 MessageHeading = 
-    type:("TAF" AMD_COR? CCCC Issued)
-    time:Period
-    line: PredominateLine { 
-		options.validate.line("HEAD", {time, line}, location() )
-
-        return [ type, time, line ]
-
-		// return [header, pd,line]
-	 }
+    type:("TAF" AMD_COR? CCCC )
+    issued:Issued
+    time:(t:Period {
+        const [ begin, end ] = t
+		options.validate.times(type, { issued, begin, end }, range )
+        return t
+    })
+    line: PredominateLine {  return [ type, time, line ] }
 
 CCCC "ICAO; CCCC @AFMAN 15-124 1.3.2.1.3" = __
-    cccc:( [A-Z][A-Z][A-Z][A-Z] )  { return cccc.join("") }
+    cccc:( [A-Z][A-Z][A-Z][A-Z] )  { 
+        return getLocation(cccc.join("")) 
+        }
 
 AMD_COR 'AMD or COR; ("AMD" || "COR")? @AFMAN 15-124 1.3.2.1.2.' = __
-    amd_cor:( "AMD" / "COR" ) { return amd_cor }
+    amd_cor:( "AMD" / "COR" ) { 
+        return getLocation(amd_cor) 
+        }
 
 Issued "Issue Date and Time YYGGggZ; DDHHMMZ @AFMAN 15-124 1.3.2.1.4." = __
-    issued:( DD HH MM ) "Z" { return getUTCDate(issued) }
+    issued:( DD HH MM ) "Z" { 
+        return getUTCDate(issued)
+        }
 
 Period "Valid Period YYG1G1/YYG2G2 as [DDHH/DDHH] @AFMAN 15-124 1.3.2.1.5."= __ 
-    start:( UTCDateHour ) "/" stop: ( UTCDateHour ) {return [start, stop]}
+    start:( UTCDateHour ) "/" stop: ( UTCDateHour ) {
+        return [start, stop]
+        }
 
 //** ------------------------|  BecomingGroup   |------------------------------------    
 BecomingGroup = _NewLine 
     type:"BECMG"
-	time:UTCStartStop 
-	line:PredominateLine  {
-		options.validate.line("BECMG", {time, line} , location())
+	time:( t: UTCStartStop {
+        const [ begin, end ] = t
+        options.validate.times( type, { begin, end }, range )
+        return t
+    })
+	line:PredominateLine { return [ type, time, line ] }
 
-
-        return [ type, time, line ]
-    }
 
 //** -----------------------|  TemporaryGroup   |-----------------------------------
 TemporaryGroup = _NewLine 
-    type:"TEMPO" time:UTCStartStop line:TemporaryLine {
-        return [ type, time, line ]
-        }
+    type:"TEMPO" 
+    time:( t: UTCStartStop {
+        const [ begin, end ] = t
+        options.validate.times( type, { begin, end }, range )
+        return t
+    })
+    line:TemporaryLine { return [ type, time, line ] }
 
 //** -----------------------|   PredominateLine  |-----------------------------------
 
-PredominateLine = p:Primary s:Secondary{return [...p,...s]}
+PredominateLine = 
+    ddfff:(value:WindGroup{
+        return { value, range : range() }
+    } )
+    vvvv:(value:VisibilityGroup{
+        return { value, range : range() }
+    } )
+    ww:WeatherGroup
+    // ww:(value:WeatherGroup { 
+
+    //     return { value, range : range() }
+    //     })
+    NNNhhh:(value:CloudObscurationGroup{
+        // console.log(vvvv, ww, NNNhhh)
+        options.validate.NNNhhh( [ vvvv.value, ww.value, value ], range )
+ 
+        return { value, range : range() }
+    })
+	va:VolcanicAshGroup? 
+	llws:LowLevelWindShearGroup? 
+	ice:IcingGroup? 
+	turb:TurbulenceGroup? 
+	altsg:LowestAltimeterGroup
 
 
-Primary = p:( WindGroup VisibilityGroup ) ww:(WW_NsNsNshshshsCC){
-	
-	return [...p,...ww]
-}
 
-WW_NsNsNshshshsCC = ww:(WeatherGroup CloudObscurationGroup){
-	// const validated = options.validate.tsRemark(ww)
-	// if(!!validated)throw new peg$SyntaxError(...validated,location())
-	return ww
-}
-
-
-
-
-Secondary = (		
-	VolcanicAshGroup? 
-	LowLevelWindShearGroup? 
-	IcingGroup? 
-	TurbulenceGroup? 
-	LowestAltimeterGroup)
 
 //** -----------------------|   TemporaryLine  |-----------------------------------
 TemporaryLine = 
     line :( WindGroup? VisibilityGroup? WeatherGroup? CloudObscurationGroup? LowLevelWindShearGroup? IcingGroup? TurbulenceGroup?) {
-		const [ dddff, vvvv, ww, nnnhhh, ...misc]=line
-		if(!dddff && !ww.some(el => el !== null) && !nnnhhh)throw new EncodingException({
-            message:"Tempo groups should contain either wind speed, present weather or cloud cover",
-             expected:[{type:"literal", description:"When winds are calm, encode dddff as 00000KT; 00000KT @AFMAN 15-124 1.3.4.1.1"}],
-            found: location()
-            })
+		// const [ dddff, vvvv, ww, nnnhhh, ...misc]=line
+		// if(!dddff && !ww.some(el => el !== null) && !nnnhhh)throw new EncodingException({
+        //     message:"Tempo groups should contain either wind speed, present weather or cloud cover",
+        //      expected:[{type:"literal", description:"When winds are calm, encode dddff as 00000KT; 00000KT @AFMAN 15-124 1.3.4.1.1"}],
+        //     found: location()
+        //     })
             // console.log(vvvv,misc )
 		return line
 	}
-
-// PresentWeatherGroup = vis: VisibilityGroup  wx:WeatherGroup {
-// 	var presWx = wx.filter(f=>f)
-// 	if (presWx.length ===0) presWx = null
-// 	const value = [vis, presWx]
-
-
-
-
-
-// 	return value
-
-// }
 
 //** -------|  1.3.9. Operationally significant/Hazardous weather Groups.   |----------------------
 // 1.3.9. Operationally significant/Hazardous weather Groups. Volcanic ash and wind shear are
@@ -175,8 +180,7 @@ TemporaryLine =
 VolcanicAshGroup "Volcanic Ash (VA) Group; (VAbbbttt) @AFMAN 15-124 1.3.9.2." = __
     "VA" 
 
-//** ------------------------|  (WShxhxhx/dddfffKT)   |------------------------------------    
-// 1.3.9.2. Non-Convective Low-Level Wind Shear Group (WShxhxhx/dddfffKT)
+//** -----|  1.3.9.2. Non-Convective Low-Level Wind Shear Group (WShxhxhx/dddfffKT)  |--------------
 //Use this group only to forecast wind shear not associated with convective 
 //activity from the surface up to and including 2,000 feet AGL
 LowLevelWindShearGroup "Non-Convective Low-Level Wind Shear Group; (WShxhxhx/dddfffKT) @AFMAN 15-124 1.3.9.2." = __
@@ -184,7 +188,7 @@ LowLevelWindShearGroup "Non-Convective Low-Level Wind Shear Group; (WShxhxhx/ddd
     hxhxhx:([0]([0,1][0-9]/[2][0])) "/" 
     ddd:Direction ff:([0-9][0-9])"KT" {
         const height = Number(hxhxhx.flat().join(""))*100
-        return ["WS",height, ddd, Number(ff.join(""))]
+        return getLocation(["WS",height, ddd, Number(ff.join(""))])
     }
 
 //-------------|1.3.10. Icing Group && 1.3.11. Turbulence Group ---------
@@ -197,11 +201,11 @@ LowLevelWindShearGroup "Non-Convective Low-Level Wind Shear Group; (WShxhxhx/ddd
 
 //-------------|(6IchihihitL)  |---------
 IcingGroup "Icing Group; (6IchihihitL) @AFMAN 15-124 1.3.10." = __ 
-    icing:([6][0-9]BaseHeight Thickness) {return icing}
+    icing:( [6][0-9] BaseHeight Thickness) {return getLocation(icing)}
 
 //-------------| (5BhBhBhBtL) |-------
 TurbulenceGroup "Turbulence group; (5BhBhBhBtL) @AFMAN 15-124 1.3.11." = __ 
-    turb:([5][0-9]BaseHeight Thickness) {return turb}
+    turb:([5][0-9]BaseHeight Thickness) {return getLocation(turb)}
 //	BASE HEIGHT
 BaseHeight = bH:(([0]([0][0-9] / [1][0,1] /[9][9])) / ([1][0,1,2][0]))   { return bH.flat().join("")*100 }
 //	THICKNESS
@@ -217,26 +221,34 @@ Thickness = tL:([0-9]){return Number(tL)*1000}
 // thunderstorms, heavy rain, and hail; -RASN is light rain and snow; TS is\
 // thunderstorm without precipitation).
 WeatherGroup = 
-    ww:( FunnelCloud? Precipitation? Obscuration? Vicinity? Other? ) {
+    ww:(
+        FunnelCloud? 
+        Precipitation? 
+        Obscuration? 
+        Vicinity? 
+        Other?
+        ){ return getRange(ww) }
+    // value:( FunnelCloud? Precipitation? Obscuration? Vicinity? Other? ) {
 
-        if (ww.filter(n => n).length>3)
-        throw new EncodingException({
-			type:'EncodingException',
-            message:"When more than one weather or obscuration condition.\
-            exists, limit the w'w' group to three groups.When more than three\
-            w'w' groups apply to a situation, select and encode the three w'w'\
-            that are most significant to operations.",
-            expected:[{type:"other", description:"do not encode more than 3 w'w' groups @AFMAN 15-124 1.3.6.2."}],
-            found: location()
-            })
-        // 
-        return ww} 
+    //     // if (ww.filter(n => n).length>3)
+    //     // throw new EncodingException({
+	// 	// 	type:'EncodingException',
+    //     //     message:"When more than one weather or obscuration condition.\
+    //     //     exists, limit the w'w' group to three groups.When more than three\
+    //     //     w'w' groups apply to a situation, select and encode the three w'w'\
+    //     //     that are most significant to operations.",
+    //     //     expected:[{type:"other", description:"do not encode more than 3 w'w' groups @AFMAN 15-124 1.3.6.2."}],
+    //     //     found: location()
+    //     //     })
+    //     // 
+    //     return [{location,value}]
+    //     } 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////// 1.) DESCRIPTORS ///////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 Vicinity = __ 
-    ww:("VC" ("TS" / "SH" / "FG" / ("BL" ("SN" / "DU" / "SA")) / "PO" / "SS" / "DS" )){return ww.flat().join("")};
+    ww:("VC" ("TS" / "SH" / "FG" / ("BL" ("SN" / "DU" / "SA")) / "PO" / "SS" / "DS" )){return getLocation(ww.flat().join(""))};
 
 // Intensity = (LGT/HVY)?
 // HVY = "+"
