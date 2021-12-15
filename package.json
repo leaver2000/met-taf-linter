@@ -2,6 +2,7 @@
     "name": "react-linter",
     "version": "0.1.0",
     "private": true,
+    "type": "module",
     "dependencies": {
         "peggy": "^1.2.0",
         "prismjs": "^1.25.0",
@@ -11,18 +12,27 @@
     },
     "scripts": {
         "start": "PORT=3002 react-scripts start",
-        "peggy": "nodemon --watch peg/ --exec peggy -o src/parsers/taf-parser.js peg/taf-parser.peggy",
+        "peggy":"nodemon --watch peg/*.peggy --exec peggy --output src/parsers/taf-parser.js --format es peg/taf-parser.peggy",
+        "peggy2": "concurrently \"yarn make\" \"yarn watch\"",
+        "make": "nodemon --watch peg/*.peggy --exec peggy --output peg/parser.js --format es peg/taf-parser.peggy",
+        "watch": "nodemon --watch peg/parser.js --exec node peg/config.js",
+        "writeHead": "node peg/config.js src/parsers/taf-parser.js",
         "build": "react-scripts build",
         "test": "react-scripts test",
         "eject": "react-scripts eject"
     },
     "eslintConfig": {
+
         "extends": [
             "react-app",
             "react-app/jest"
-        ]
+        ],
+        "rules": {
+            "no-control-regex": 0
+          }
     },
     "browserslist": {
+
         "production": [
             ">0.2%",
             "not dead",
@@ -37,6 +47,7 @@
     "devDependencies": {
         "@types/react": "^17.0.37",
         "@types/react-dom": "^17.0.11",
+        "concurrently": "^6.4.0",
         "react-json-tree": "^0.15.1",
         "typescript": "^4.5.4"
     }

@@ -1,577 +1,183 @@
 import React from 'react';
-import { Expression } from './expression';
 import Prism from 'prismjs';
-// import { tafParser } from '../parsers';
+import { Expression } from './expression';
 import { useParser } from '../hooks/use-parser';
 
-
 export function Linter() {
-    const expressionRef: React.MutableRefObject<any> = React.useRef();
-    const { pass, error, tafString, errorString, setParserState } = useParser();
+	const ref: React.MutableRefObject<any> = React.useRef();
+	React.useEffect(() => Prism.highlightElement(ref.current));
+	const { success, error, tafString, errorString, setParserState } = useParser();
 
-    const update = (text: string) => {
-        if (text[text.length - 1] === '\n') {
-            text += ' ';
-        }
-        setParserState(({ ...oldState }) => ({ ...oldState, tafString: text }));
-        // setCodeValue(({ ...old }) => ({ ...old, tafString: text }));
-        Prism.highlightElement(expressionRef.current);
-    };
-    const onInput = (e) => {
-        var text: string = e.target.value;
-        update(text);
-    };
+	const update = React.useCallback(
+		(tafString: string) => {
+			if (tafString[tafString.length - 1] === '\n') {
+				tafString += ' ';
+			}
+			setParserState(({ ...oldState }) => ({ ...oldState, tafString }));
+		},
+		[setParserState]
+	);
 
-    // useEffect(() => {
-    // 	if (!!error) {
-    // 		// console.log(error);
-    // 		try {
-    // 			error.expected.forEach((e) => {
-    // 				try {
-    // 					switch (e.type) {
-    // 						case 'literal':
-    // 							// console.log(e.text);
-    // 							break;
-    // 						default:
-    // 							break;
-    // 					}
-    // 					const a = e.description.split(/\s*;\s*|\s*@\s*/);
-    // 					// console.log(a);
-    // 					// const [expected, ref] = e.description.split(/\s*@\s*/);
-    // 					// console.log([...expected.split(/\[.*\]/), ref]);
-    // 				} catch (err) {
-    // 					// console.log('ERROR SPLIT REPORTING NOT SUPPORTED', err);
-    // 				}
-    // 			});
-    // 		} catch (e) {}
-    // 	}
-    // }, [error]);
-    const onKeyDown = (e) => {
-        const element = e.target;
-        let code = element.value;
-        switch (e.key) {
-            case 'Tab':
-                e.preventDefault();
-                let before_tab = code.slice(0, element.selectionStart);
-                let after_tab = code.slice(element.selectionEnd, element.value.length); // text after tab
-                let cursor_pos = element.selectionEnd + 1;
-                element.value = before_tab + '\t' + after_tab; // add tab char
-                // move cursor
-                element.selectionStart = cursor_pos;
-                element.selectionEnd = cursor_pos;
-                update(element.value);
-                break;
-            default:
-                return;
-        }
-    };
+	const onInput = React.useCallback(
+		(e: React.BaseSyntheticEvent) => {
+			var text: string = e.target.value;
+			update(text);
+		},
+		[update]
+	);
 
-    return (
-        <div style={{ color: 'white' }}>
-            <Expression ref={expressionRef} onInput={onInput} onKeyDown={onKeyDown} value={tafString} errorOverlay={errorString} />
-            <PassFailDisplay pass={pass} error={error} />
-        </div>
-    );
+	const onKeyDown = React.useCallback(
+		(e) => {
+			// console.log(e);
+			const element = e.target;
+			let code = element.value;
+			// console.log({ element });
+			switch (e.key) {
+				case 'Tab':
+					e.preventDefault();
+					let before_tab = code.slice(0, element.selectionStart);
+					let after_tab = code.slice(element.selectionEnd, element.value.length); // text after tab
+					let cursor_pos = element.selectionEnd + 1;
+					element.value = before_tab + '\t' + after_tab; // add tab char
+					// move cursor
+					element.selectionStart = cursor_pos;
+					element.selectionEnd = cursor_pos;
+					update(element.value);
+					break;
+				default:
+					return;
+			}
+		},
+		[update]
+	);
+
+	return (
+		<div style={{ color: 'white' }}>
+			<Expression ref={ref} onInput={onInput} onKeyDown={onKeyDown} value={tafString} errorOverlay={errorString} />
+			<PassFailDisplay pass={success} error={error} />
+		</div>
+	);
 }
-
+// interface KeyboardEvent<T = Element> extends React.SyntheticEvent<T, NativeKeyboardEvent> {
+// 	altKey: boolean;
+// 	/** @deprecated */
+// 	charCode: number;
+// 	ctrlKey: boolean;
+// 	getModifierState(key: string): boolean;
+// 	key: string;
+// 	/** @deprecated */
+// 	keyCode: number;
+// 	locale: string;
+// 	location: number;
+// 	metaKey: boolean;
+// 	repeat: boolean;
+// 	shiftKey: boolean;
+// 	/** @deprecated */
+// 	which: number;
+// }
 function PassFailDisplay({ pass, error }) {
-    return (
-        <div
-            //\
-            style={{
-                //
-                color: 'white',
-                position: 'relative',
-                width: 800,
-                border: `solid ${!!pass ? 'green' : 'red'}`,
-                backgroundColor: 'black',
-            }}>
-            {!!pass ? <Pass data={pass} /> : !!error ? <Fail data={error} /> : null}
-        </div>
-    );
+	return (
+		<div
+			//\
+			style={{
+				//
+				color: 'white',
+				position: 'relative',
+				width: 800,
+				border: `solid ${!!pass ? 'green' : 'red'}`,
+				backgroundColor: 'black',
+			}}>
+			{!!pass ? <Pass data={pass} /> : !!error ? <Fail data={error} /> : null}
+		</div>
+	);
 }
 
 function Pass({ data }) {
-    const [header, changeGroups, temperatureGroup] = data;
-    return (
-        <div>
-            <TypeTimeLine datums={header} />
-            {!!changeGroups ? changeGroups.map((group) => <TypeTimeLine datums={group} />) : null}
-            TEMPERATURE GROUP:
-            <br />
-            {JSON.stringify(temperatureGroup)}
-            <br /> <br />
-            Destructuring:
-            <br />
-            LINE:[
-            <br />
-            <Indent>[ddd ff (Gfmfm | null)] VVVV [ WW[] ] </Indent>
-            <Indent>[[NsNsNs hshshs CC][...] || SKC] ( [VAbbbttt] | null ) ( [WShxhxhx/dddfffKT] | null )</Indent>
-            <Indent> ( [6IchihihitL] | null ) ( [5BhBhBhBtL] | null ) [QNHP1P1P1P1INS] (Remarks)</Indent>
-            ]<br />
-            WW:[[ PRECIP ] [ OBSCURATION ] [ VC ]]
-            <br />
-            PRECIP:[INTENSITY DESCRIPTOR PRECIPITATION PRECIPITATION?]
-            <br />
-            OBSCURATION:
-            <br />
-            VC:
-        </div>
-    );
+	const [header, changeGroups, temperatureGroup] = data;
+	return (
+		<div>
+			<TypeTimeLine datums={header} />
+			{!!changeGroups ? changeGroups.map((group) => <TypeTimeLine datums={group} />) : null}
+			TEMPERATURE GROUP:
+			<br />
+			{JSON.stringify(temperatureGroup)}
+			<br /> <br />
+			Destructuring:
+			<br />
+			LINE:[
+			<br />
+			<Indent>[ddd ff (Gfmfm | null)] VVVV [ WW[] ] </Indent>
+			<Indent>[[NsNsNs hshshs CC][...] || SKC] ( [VAbbbttt] | null ) ( [WShxhxhx/dddfffKT] | null )</Indent>
+			<Indent> ( [6IchihihitL] | null ) ( [5BhBhBhBtL] | null ) [QNHP1P1P1P1INS] (Remarks)</Indent>
+			]<br />
+			WW:[[ PRECIP ] [ OBSCURATION ] [ VC ]]
+			<br />
+			PRECIP:[INTENSITY DESCRIPTOR PRECIPITATION PRECIPITATION?]
+			<br />
+			OBSCURATION:
+			<br />
+			VC:
+		</div>
+	);
 }
 
 const Indent = ({ ...props }) => <div style={{ textIndent: '20px' }} {...props} />;
 
 function TypeTimeLine({ datums }) {
-    const [type, time, line] = datums;
-    return (
-        <>
-            TYPE:
-            {JSON.stringify(type)}
-            <br />
-            TIME:
-            {JSON.stringify(time)}
-            <br />
-            LINE:
-            <br />
-            {JSON.stringify(line)}
-            <br /> <br />
-        </>
-    );
+	const [type, time, line] = datums;
+	return (
+		<>
+			TYPE:
+			{JSON.stringify(type)}
+			<br />
+			TIME:
+			{JSON.stringify(time)}
+			<br />
+			LINE:
+			<br />
+			{JSON.stringify(line)}
+			<br /> <br />
+		</>
+	);
 }
 
 function Fail({ data }) {
-    console.log(data);
-    return (
-        <div>
-            Error Name:
-            <div>{JSON.stringify(data.name)}</div>
-            <br />
-            Error Message:
-            <div>{JSON.stringify(data.message)}</div>
-            <br />
-            Expected:
-            <div>{JSON.stringify(data.expected)}</div>
-            <br />
-            Error Found:
-            <div>{JSON.stringify(data.found)}</div>
-            <br />
-            Error Location:
-            <div>{JSON.stringify(data.location)}</div>
-            <br />
-            {/* <div>{JSON.stringify({ data })}</div> */}
-        </div>
-    );
+	return (
+		<div>
+			Error Name:
+			<div>{JSON.stringify(data.name)}</div>
+			<br />
+			Error Message:
+			<div>{JSON.stringify(data.message)}</div>
+			<br />
+			Expected:
+			<div>{JSON.stringify(data.expected)}</div>
+			<br />
+			Error Found:
+			<div>{JSON.stringify(data.found)}</div>
+			<br />
+			Error Location:
+			<div>{JSON.stringify(data.location)}</div>
+			<br />
+			{/* <div>{JSON.stringify({ data })}</div> */}
+		</div>
+	);
 }
 
-// Expected,Found
-// type LinterState = {
-// 	tafString: string | any;
-// 	date: Date;
-// 	pass: null | any;
-// 	error: null | any;
-// };
+// type dddffGfmfmKT = [string, number, number];
+// type VVVV = number;
 
-// function splitError(tafString: string, startOfError: number, endOfError: number) {
-// 	const beforeError = tafString.slice(0, startOfError);
-// 	const theError = tafString.slice(startOfError, endOfError);
-// 	const afterError = tafString.slice(endOfError);
-// 	return [beforeError, theError, afterError];
-// }
-// function splitError2(tafString: string, startOfError: number) {
-// 	const beforeError = tafString.slice(0, startOfError);
+// // Precipitation? Obscuration? Vicinity?
+// type Obscuration = [];
+// type Precipitation = [];
+// type Vicinity = [];
 
-// 	var theError = tafString.slice(startOfError);
-
-// 	var endOfError = theError.match(/(?<=.[\t\n\r ])/);
-
-// 	if (!!endOfError) {
-// 		theError = theError.slice(0, endOfError.index);
-// 		const afterError = theError.slice(endOfError.index);
-// 		return [beforeError, theError, afterError];
-// 	}
-// 	return [beforeError, theError];
-// }
-// function useParser() {
-// 	const [{ pass, error, tafString, date }, setParserState] = useState<LinterState>({ pass: null, error: null, tafString: sampleTaf, date: new Date() });
-
-// 	const [errorString, setErrorString] = useState<null | any>(null);
-
-// 	const utcDateValues = useMemo(
-// 		() => ({
-// 			//
-// 			UTCString: date.toUTCString(),
-// 			year: date.getUTCFullYear(),
-// 			month: date.getUTCMonth(),
-// 			day: date.getUTCDate(),
-// 		}),
-// 		[date]
-// 	);
-// 	const onChange = useCallback(
-// 		(pass, error) => {
-// 			setParserState(({ ...oldState }) => ({ ...oldState, pass, error }));
-// 			if (!!error) {
-// 				const arrayOfStrings = (function (type) {
-// 					switch (type) {
-// 						case 'DateError':
-// 							return splitError(tafString, error.location.start, error.location.end);
-// 						// return [error.location.start, error.location.end];
-// 						case 'SyntaxError':
-// 							return splitError2(tafString, error.location.start.offset);
-// 						// return [error.location.start.offset, error.location.end.offset];
-// 						default:
-// 							return [0, null];
-// 					}
-// 				})(error.name);
-
-// 				// const [theStart, theError, theEnd] = splitError(tafString, start, end);
-// 				setErrorString(arrayOfStrings);
-// 			} else {
-// 				setErrorString(null);
-// 			}
-// 		},
-// 		[tafString]
-// 	);
-
-// 	const secondaryValidation = useCallback((validSyntax) => {
-// 		const [[[taf, amd, icao, date], timperiod, firstLine], mainBody, temperatureGroup] = validSyntax;
-// 		// console.log(validSyntax);
-// 		// const [TAF, AMD_COR, ICAO, issued] = headerInformation;
-
-// 		// const dv = new DateValidator([issued, start, stop], { AMD_COR }, () => {});
-
-// 		// if (!!mainBody) {
-// 		// 	mainBody.reduce((memo, [type, time, line]) => {
-// 		// 		switch (type) {
-// 		// 			case 'BECMG':
-// 		// 				dv.validateBECMG(time, (err) => {
-// 		// 					throw new DateException({ ...err, found: foundUnknown });
-// 		// 				});
-
-// 		// 				break;
-// 		// 			case 'TEMPO':
-// 		// 				break;
-// 		// 			default:
-// 		// 				break;
-// 		// 		}
-
-// 		// 		// console.log(memo, type, time, line);
-
-// 		// 		return [...memo, [type, time, line]];
-// 		// 	}, []);
-// 		// }
-
-// 		return validSyntax;
-// 	}, []);
-// 	// const validator = useCallback(()=>{
-// 	//     tafLineValidator()
-// 	// },[])
-
-// 	// Expected,Found
-// 	const validate = useMemo(() => {
-// 		return new Validator2({ isConusLocation: false });
-// 	}, []);
-// 	// useEffect(() => {
-// 	// 	validate.tafString = tafString;
-// 	// }, [validate, tafString]);
-// 	useEffect(() => {
-// 		try {
-// 			const validSyntax = tafParser.parse(tafString.toUpperCase(), {
-// 				...utcDateValues,
-// 				validate,
-// 			});
-
-// 			const success = validate.encoding(validSyntax);
-// 			onChange(success, null);
-// 		} catch (e) {
-// 			onChange(null, e);
-// 			console.log(e);
-// 		}
-// 	}, [tafString, date, onChange, utcDateValues, secondaryValidation, validate]);
-
-// 	return { pass, error, tafString, setParserState, errorString };
-// }
-// class Validator2 {
-// 	isConusLocation = false;
-// 	begin: Date | undefined;
-// 	beginTime: number | undefined;
-// 	end: Date | undefined;
-// 	endTime: number | undefined;
-// 	_dv: DateValidator | undefined;
-
-// 	constructor({ isConusLocation }: ValidatorOptions) {
-// 		this.isConusLocation = isConusLocation;
-// 	}
-// 	encoding(validSyntax) {
-// 		const [[[taf, amd, icao, date], timperiod, firstLine], mainBody, temperatureGroup] = validSyntax;
-// 		// console.log(validSyntax);
-// 		return validSyntax;
-// 	}
-
-// 	times(type: string, { issued, begin, end }: TDates, location: ErrorLocation) {
-// 		if (!!issued) {
-// 			this._dv = new DateValidator([issued, begin, end], { AMD_COR: false }, location);
-// 		} else if (!!this._dv) {
-// 			switch (type) {
-// 				case 'BECMG':
-// 					this._dv.validateBECMG(begin, end, (message, expected) => {
-// 						throw new EncodingError('DateError', message, expected, location);
-// 					});
-// 					break;
-// 				case 'TEMPO':
-// 					this._dv.validateTEMPO(begin, end, (message, expected) => {
-// 						throw new EncodingError('DateError', message, expected, location);
-// 					});
-// 					break;
-// 				default:
-// 					return;
-// 			}
-// 		}
-// 	}
-// 	line(type: string, value: any[][], location: ErrorLocation) {}
-// }
-
-// class EncodingError {
-// 	name: string;
-// 	message: string;
-// 	expected: { type: string; description: string }[];
-// 	location: ErrorLocation;
-// 	constructor(name: string, message: string, expected: { type: string; description: string }[], location: ErrorLocation) {
-// 		this.name = name;
-// 		this.message = message;
-// 		this.expected = expected;
-// 		this.location = location;
-// 	}
-// }
-
-// type TDates = {
-// 	issued?: Date;
-// 	begin: Date;
-// 	end: Date;
-// };
-
-// type ErrorLocation = {
-// 	end: { offset: number; line: number; column: number };
-// 	start: { offset: number; line: number; column: number };
-// };
-type ValidatorOptions = {
-    isConusLocation: boolean;
-};
-
-// class Validator {
-// 	isConusLocation = false;
-// 	offset = 0;
-// 	location = { start: { line: 0, offset: 0 } };
-// 	start = { line: 0, offset: 27 };
-// 	end = { line: 0, offset: 0, column: 0 };
-
-// 	tafArray: any[][] = [];
-// 	tafString: string = '';
-
-// 	constructor({ isConusLocation }: ValidatorOptions) {
-// 		this.isConusLocation = isConusLocation;
-// 	}
-// 	line(type: string, { time, line }: any, { start }) {
-// 		this.tafArray.push([time, line]);
-
-// 		switch (type) {
-// 			case 'HEAD':
-// 				this.offset = 27;
-// 				this._PredominateLine(line);
-// 				break;
-
-// 			case 'BECMG':
-// 				this.offset = 16;
-// 				this._BECMGDates(time);
-// 				this._PredominateLine(line);
-
-// 				break;
-// 			default:
-// 				break;
-// 		}
-// 	}
-// 	_PredominateLine(value) {
-// 		const [[ddd, ff, fmfm], [vvvv], [fc, precip, obsc, vc, other], skyCondition, VAbbbttt, WShear, sixGroup, fiveGroup, altsg] = value;
-// 		//MATCH PRECIP FOR TS
-// 		const tsFlag = !!precip && precip.match(/^TS[A-Z]+|^TS/);
-// 		const vctsFlag = !!vc && vc.match(/^VCTS/);
-// 		var lowestBrokenOrOvercastLayer: boolean = true;
-
-// 		//"Do not forecast TSRA and VCTS in the same line",
-// 		if (tsFlag && vctsFlag)
-// 			throw new GeneralException({
-// 				message: 'Do not forecast TSRA and VCTS in the same line',
-// 				location: this._getLocation('VCTS', value),
-// 			});
-
-// 		skyCondition.reduce((hhhMemo, [nnn, hhh, cbFlag]) => {
-// 			// if the previous height value in a line is = or greater than current height
-// 			if (!!hhhMemo && hhhMemo >= hhh)
-// 				throw new GeneralException({
-// 					message: 'previous height value in a line is = or greater than current height',
-// 					location: this._getLocation([nnn, hhh].join(''), value),
-// 				});
-
-// 			// if the layer is the lowest broken or overcast layer
-// 			// const isBrokenOrOvercast = nnn === 'BKN' || nnn === 'OVC'
-// 			const cloudLayer = tsFlag ? nnn.match(/BKN|OVC/) : nnn.match(/SCT|BKN|OVC/);
-
-// 			if (cloudLayer && lowestBrokenOrOvercastLayer) {
-// 				lowestBrokenOrOvercastLayer = false;
-// 				if (tsFlag && !cbFlag) {
-// 					throw new GeneralException({
-// 						message: 'Forecasted Thunderstorms should have a CB remark on the lowest broken or overcast layer',
-// 						expected: [{ type: 'litteral', description: 'CB' }],
-// 						location: this._getLocation('CB', value),
-// 					});
-// 				}
-// 			} else if (cloudLayer && !lowestBrokenOrOvercastLayer && cbFlag) {
-// 				throw new GeneralException({
-// 					message: 'only include CB remark on the lowest broken or overcast layer',
-// 					expected: [{ type: 'other', description: '' }],
-// 					location: this._getLocation('CB', value),
-// 				});
-// 			}
-
-// 			return hhh;
-// 		}, null);
-// 	}
-
-// 	_BECMGDates([YYG1G1, YYG2G2]) {}
-
-// 	tsRemark([[fc, precip, obsc, vc, other], skyCondition]) {
-// 		const tsFlag = !!precip && precip.match(/^TS[A-Z]+|^TS/);
-// 		const vctsFlag = !!vc && vc.match(/^VCTS/);
-// 		var lowestBrokenOrOvercastLayer: boolean = true;
-// 		// const [ddd, ff, fmfm] = wind
-
-// 		// const getOffsets = (type) => {
-// 		//     switch (type) {
-// 		//         case "WW":
-// 		//             return ((wind.join("").length + 2) + !!fmfm ? 6 : 6) + 8
-// 		//         default:
-// 		//             break
-// 		//     }
-
-// 		// }
-
-// 		if (tsFlag && vctsFlag) {
-// 			return ['Do not forecast TSRA and VCTS in the same line', [{ type: 'other', description: 'Visibility Group (VVVV)' }], ' '];
-// 		}
-
-// 		return null;
-// 	}
-
-// 	_getLocation(errorToFind: string, [[ddd, ff, fmfm], [vvvv], ww, skyCondition, VAbbbttt, WShear, sixGroup, fiveGroup, altsg]) {
-// 		const {
-// 			location: {
-// 				start: { offset, line },
-// 			},
-// 		} = this;
-
-// 		const wind = !!fmfm ? [ddd, ff, 'G', fmfm, 'KT'].join('') : [ddd, ff, 'KT'].join('');
-// 		const Wx = ww.filter((w) => w);
-// 		const skycon = skyCondition.map(([nnn, height, cc]) => {
-// 			const hhh = height / 100;
-// 			const nnnHHH = [nnn, hhh < 100 ? `0${hhh}` : hhh];
-// 			if (!!cc) return [...nnnHHH, 'CB'].join('');
-
-// 			return nnnHHH.join('');
-// 		});
-
-// 		const lineString = [wind, vvvv, ...Wx, ...skycon].join(' ');
-
-// 		return {
-// 			start: {
-// 				offset: lineString.indexOf(errorToFind) + this.offset,
-// 				line: this.start.line,
-// 				column: 0,
-// 			},
-// 			end: {
-// 				offset: 0,
-// 				line: 0,
-// 				column: 0,
-// 			},
-// 		};
-// 	}
-
-// 	_lowestBrokenOrOvercastLayer() {}
-
-// 	// group(type: string, { found, value, location }: { found: Found; value: any; location: () => any }) {
-
-// 	// }
-// }
-
-// // function tafLineValidator(
-// //     type: string,
-// //     { found, value, location }: { found: Found; value: any; location: () => any }) {
-
-// //     switch (type) {
-// //         case 'BECMG':
-// //             // console.log(location());
-// //             const { time, line } = value;
-// //             const [start, end] = time;
-// //             if (new Date(start) >= new Date(end)) {
-// //             }
-// //             // throw new EncodingException({
-// //             //     message:`${type} Group START time should occur before the END time`,
-// //             //     expected:[{
-// //             //         type:"literal",
-// //             //         description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
-// //             //         ],
-// //             //     found: location()
-// //             //     });
-// //             break;
-// //         case 'TEMPO':
-// //             break;
-// //         case 'VVVV':
-// //             if (options.isConusLocation && value === 4800) {
-// //                 throw new DateException({
-// //                     // type:'SyntaxException',
-// //                     message: 'Note 1: Substitute 5000 meters for 4800 meters Outside the Continental United States (OCONUS) locations based on the host-nation national practice.',
-// //                     found,
-// //                 });
-// //             } else if (!options.isConusLocation && value === 5000)
-// //                 throw new DateException({
-// //                     // type:'SyntaxException',
-// //                     message: 'Note 1: Substitute 5000 meters for 4800 meters Outside the Continental United States (OCONUS) locations based on the host-nation national practice.',
-// //                     found,
-// //                 });
-// //             return;
-
-// //         default:
-// //             return;
-// //     }
-// // }
-
-type TAFNDArray = [[string, number, number | null], number, WW, NsNsNshshshsCC];
-
-const sampleTaf = `\
-TAF KADW 280100Z 0701/0807 01010KT 8000 TSRA BKN030CB QNH2902INS
-BECMG 0704/0705 01015G17KT 9999 BKN020 BKN025 QNH2902INS
-BECMG 0705/0706 VRB06KT 9999 BKN020 QNH2902INS TX13/0421Z TNM03/0508Z\
-`;
-// TAF (AMD or COR) CCCC YYGGggZ YYG1G1/YYG2G2
-//	dddffGfmfmKT VVVV
-// w’w’ NsNsNshshshsCC or VVhshshs or SKC (VAbbbttt) (WShxhxhx/dddfffKT)
-// (6IchihihitL) (5BhBhBhBtL) QNHP1P1P1P1INS (Remarks)
-// TTTTT YYGGGeGe or YYGG/YYGeGe ddffGfmfmKT…same as above… (Remarks)
-// TX(M)TFTF/YYGFGFZ TN(M)TFTF/YYGFGFZ
-
-type dddffGfmfmKT = [string, number, number];
-type VVVV = number;
-
-// Precipitation? Obscuration? Vicinity?
-type Obscuration = [];
-type Precipitation = [];
-type Vicinity = [];
-
-/**
- * ```
- * type WW = "NSW" | [[['+', 'TSRAGR']],[fg],[]] | null
- * ```
- * */
-type WW = [Precipitation | null, Obscuration | null, Vicinity | null] | string | null;
+// /**
+//  * ```
+//  * type WW = "NSW" | [[['+', 'TSRAGR']],[fg],[]] | null
+//  * ```
+//  * */
+// type WW = [Precipitation | null, Obscuration | null, Vicinity | null] | string | null;
 
 /**
  * EX:
@@ -591,16 +197,17 @@ type WW = [Precipitation | null, Obscuration | null, Vicinity | null] | string |
  * ```
  */
 
-type NsNsNshshshsCC = [number, number, number, number, [number, boolean], number, number, [number, boolean]];
-type VVhshshs = [string, number];
+// type NsNsNshshshsCC = [number, number, number, number, [number, boolean], number, number, [number, boolean]];
+// type VVhshshs = [string, number];
 
-type PredominateLine = [dddffGfmfmKT, VVVV, WW, NsNsNshshshsCC | VVhshshs | null];
-type TemporaryLine = [dddffGfmfmKT | null, VVVV | null, WW | null, NsNsNshshshsCC | null];
+// type PredominateLine = [dddffGfmfmKT, VVVV, WW, NsNsNshshshsCC | VVhshshs | null];
+// type TemporaryLine = [dddffGfmfmKT | null, VVVV | null, WW | null, NsNsNshshshsCC | null];
 
-type Heading = [[string, string | null, string, Date], [Date, Date], PredominateLine];
-type ChangeLines = [string, [Date, Date], PredominateLine | TemporaryLine[]];
+// type Heading = [[string, string | null, string, Date], [Date, Date], PredominateLine];
+// type ChangeLines = [string, [Date, Date], PredominateLine | TemporaryLine[]];
 
-type TX = [number, Date];
-type TN = [number, Date];
+// type TX = [number, Date];
+// type TN = [number, Date];
 
-type TAF = [Heading, ChangeLines[], [TX, TN]];
+// type TAF = [Heading, ChangeLines[], [TX, TN]];
+// console.log(TAF)

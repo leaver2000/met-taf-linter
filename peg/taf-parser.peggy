@@ -1,27 +1,10 @@
-
-
 {
 	function getUTCDate( DDHHMM ){
 		const { year, month } = options
-		return new Date(Date.UTC(year,month,...DDHHMM))//.g
+		return new Date(Date.UTC(year,month,...DDHHMM))
 	}
-
-    // function getRange(value){
-    //     return {
-    //         value,
-    //         range:range()
-    //     }
-    // }
-
-	class EncodingException {
-        type = "EncodingException"
-		constructor({ message, expected, found  }) {
-			this.message = message
-			this.expected = expected
-			this.found = found
-			
-		}
-	}
+    const { validate } = options
+    console.log(offset, text, location, error, expected, peg$anyExpectation)
 
 }
 //!! ERROR ERPORTING FORMAT [ HumanReadableError ; AutoText @ Reference ]
@@ -32,11 +15,10 @@ RUN = MessageHeading (( BecomingGroup / TemporaryGroup )+)? TemperatureGroup
 MessageHeading = 
     head:("TAF" AMD_COR? CCCC )
     issued:Issued
-    time:(t:Period {
-        const [type,AMD_COR,CCCC] = head
-        const [ begin, end ] = t
-		options.validate.timeGroup(type, { issued, begin, end, AMD_COR }, range )
-        return t
+    time:( time: Period {
+        const AMD_COR = head[1];
+		validate._YYGGggZ( issued, ...time, { AMD_COR }, range )
+        return time
     })
     pLine: PredominateLine {  return [ head, time, pLine ] }
 
@@ -46,40 +28,32 @@ CCCC "ICAO; CCCC @AFMAN 15-124 1.3.2.1.3" = __
         }
 
 AMD_COR 'AMD or COR; ("AMD" || "COR")? @AFMAN 15-124 1.3.2.1.2.' = __
-    amd_cor:( "AMD" / "COR" ) { 
-        return amd_cor
-        }
+    amd_cor:( "AMD" / "COR" ) { return amd_cor; }
 
 Issued "Issue Date and Time YYGGggZ; DDHHMMZ @AFMAN 15-124 1.3.2.1.4." = __
-    issued:( DD HH MM ) "Z" { 
-        return getUTCDate(issued)
-        }
+    issued:( DD HH MM ) "Z" { return getUTCDate(issued); }
 
 Period "Valid Period YYG1G1/YYG2G2 as [DDHH/DDHH] @AFMAN 15-124 1.3.2.1.5."= __ 
-    start:( UTCDateHour ) "/" stop: ( UTCDateHour ) {
-        return [start, stop]
-        }
+    start:( UTCDateHour ) "/" stop: ( UTCDateHour ) { return [start, stop]; }
 
 //** ------------------------|  BecomingGroup   |------------------------------------    
 BecomingGroup = _NewLine 
-    type:"BECMG"
-	time:( t: UTCStartStop {
-        const [ begin, end ] = t
-        options.validate.timeGroup( type, { begin, end }, range )
-        return t
+    type: "BECMG"
+	time:( time: UTCStartStop {
+        validate._YYG1G1_YYG2G2( type, ...time, range );
+        return time;
     })
-	pLine:PredominateLine { return [ type, time, pLine ] }
+	pLine:PredominateLine { return [ type, time, pLine ]; }
 
 
 //** -----------------------|  TemporaryGroup   |-----------------------------------
 TemporaryGroup = _NewLine 
-    type:"TEMPO" 
-    time:( t: UTCStartStop {
-        const [ begin, end ] = t
-        options.validate.timeGroup( type, { begin, end }, range )
-        return t
+    type: "TEMPO" 
+    time:( time: UTCStartStop {
+        validate._YYG1G1_YYG2G2( type,  ...time, range );
+        return time;
     })
-    tempo:TemporaryLine { return [ type, time, tempo ] }
+    tLine:TemporaryLine { return [ type, time, tLine ]; }
 
 //** -----------------------|   PredominateLine  |-----------------------------------
 
@@ -92,11 +66,11 @@ PredominateLine =
         return  value
     })
     ww:(ww:WeatherGroup{
-        options.validate.VVVVww( [ vvvv, ww ], range )
+        validate._VVVV_ww( [ vvvv, ww ], range )
         return ww
     })
     NNNhhh:( value : CloudObscurationGroup {
-        options.validate.NNNhhh( [ ww, value ], range )
+        validate._ww_NNNhhhCC( [ ww, value ], range )
         return  value
     })
 	va:VolcanicAshGroup? 
@@ -241,9 +215,9 @@ Drizzle =
 
 // DZ "Drizzle" = "DZ"
 // SN "Snow" = "SN"
-SG "Snow Grains" = "SG"
-IC "Ice Crystals (Diamond Dust)" = "IC"
-PL "Ice Pellets" = "PL"
+// SG "Snow Grains" = "SG"
+// IC "Ice Crystals (Diamond Dust)" = "IC"
+// PL "Ice Pellets" = "PL"
 // GR "Hail" = "GR"
 // GS "Snow Pellets " = "GS"
 
@@ -296,14 +270,7 @@ Other = __
 WindGroup "WindGroup Surface wind direction, speed and gusts, if any; dddffGfmfmKT @AFMAN 15-124 1.3.4." = __ 
     direction:Direction 
     speed:( Sustained / Gusting )  {
-        // const [sustained, gust] = speed
-        // if(sustained === 0 && direction !== '000')throw new EncodingException({
-        //     message:"Forecast Gust Should be greater than Forecast Windspeeds",
-        //     expected:[{type:"literal", description:"When winds are calm, encode dddff as 00000KT; 00000KT @AFMAN 15-124 1.3.4.1.1"}],
-        //     found: location()
-        //     })
-        options.validate.windGroup(direction,...speed, range)
-        return [direction,...speed]
+        return validate._dddffGfmfmKT(direction,...speed, range);
      };
 
 Direction = 
@@ -344,27 +311,7 @@ VisibilityGroup "Visibility Group (VVVV)" = __
         [5-9][0]ZZ /
 		[9][9][9][9]
         ) { 
-            
-            value = [Number(value.flat().join(""))]
-            // const foundLocation = location()
-			
-            // console.log(foundLocation)
-            // options.validator("VVVV",{foundLocation, value})
-
-            // if (options.isConusLocation && vis === 4800) {
-			// 	throw new EncodingException({
-			// 		type:'SyntaxException',
-			// 		message:"Note 1: Substitute 5000 meters for 4800 meters Outside the Continental United States (OCONUS) locations based on the host-nation national practice.",
-			// 		found: location()
-			// 		})
-    
-            // } else if (!options.isConusLocation && vis === 5000) throw new EncodingException({
-			// 	type:'SyntaxException',
-			// 	message:"Note 1: Substitute 5000 meters for 4800 meters Outside the Continental United States (OCONUS) locations based on the host-nation national practice.",
-			// 	found: location()
-			// 	})
-
-            return value
+            return validate._VVVV([Number(value.flat().join(""))], range);
             }
 
 //** ----------------------| CloudObscurationGroup (NsNsNshshshsCC). |----------------------
@@ -378,16 +325,9 @@ SKC = __
 Octaves = NNNhhh:( FEW? FEW? SCTCB? SCT? BKNCB? BKN? BKN? OVC? ) {return NNNhhh.filter(f=>f)}
 
 VV = __ 
-    nnn:("VV" CloudBase){ return [[nnn]] }
-
-
-
-
-
-
+    nnn:("VV" CloudBase){ return [nnn] }
 
 // Octaves = ( FEW? FEW? SCT? SCT? BKNCB? BKN? BKN? OVC? ) 
-
 FEW "(FEW = trace to 2/8ths);"= __
     nnn: "FEW" hhh:CloudBase { return [nnn, hhh] }
 
@@ -415,7 +355,7 @@ OVC "(OVC = 8/8ths);" = __
 	nnn: "OVC" hhh:CloudBase cb:CB?  { return [nnn, hhh, cb] }
 
 
-CB = cb:"CB"{return true}
+CB = cb:"CB"{return !!cb}
 CloudBase = base:( [0,1,2][0-9][0-9] / [3][0-9][0] ){return Number(base.join("")*100) }
 
 

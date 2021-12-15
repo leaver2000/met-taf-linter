@@ -7,23 +7,6 @@ body {
 	fill: rgb(0, 0, 255, 0);
 }
 
-/* #editing,
-#highlighting {
-	margin: 10px;
-	padding: 10px;
-	border: 0;
-	width: calc(100% - 32px);
-	height: 150px;
-} */
-/* #editing,
-#highlighting, */
-/* #highlighting * { */
-/* font-size: 15pt; */
-/* font-family: monospace;
-	line-height: 20pt;
-	tab-size: 2;
-} */
-
 #editing,
 #highlighting {
 	overflow: auto;
@@ -55,7 +38,7 @@ p code {
    * @author Lea Verou
    */
 
-code[class*='language-'],
+code.taf-string,
 pre[class*='language-'] {
 	font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
 	font-size: 1em;
@@ -86,20 +69,24 @@ pre[class*='language-'] {
 	background: black; /* - WebCoder49 */
 }
 
-code[class*='language-'] {
+/* code[class*='language-'] {
 	background: black;
 	color: white;
 	box-shadow: -0.3em 0 0 0.3em black, 0.3em 0 0 0.3em black;
+} */
+.taf-string {
+	background: transparent;
+	color: white;
+	box-shadow: -0.3em 0 0 0.3em black, 0.3em 0 0 0.3em black;
 }
-
 /* Inline code */
-:not(pre) > code[class*='language-'] {
+/* :not(pre) > code[class*='language-'] {
 	padding: 0.2em;
 	border-radius: 0.3em;
 	box-shadow: none;
 	white-space: normal;
-}
-
+} */
+/* 
 .token.comment,
 .token.prolog,
 .token.doctype,
@@ -166,7 +153,7 @@ code[class*='language-'] {
 
 .token.deleted {
 	color: red;
-}
+} */
 
 /* Plugin styles: Diff Highlight */
 pre.diff-highlight.diff-highlight > code .token.deleted:not(.prefix),
