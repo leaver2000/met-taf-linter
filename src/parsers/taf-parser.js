@@ -341,7 +341,7 @@ function peg$parse(input, options) {
   var peg$e87 = peg$literalExpectation("QNH", false);
   var peg$e88 = peg$classExpectation(["2", ",", "3"], false, false);
   var peg$e89 = peg$literalExpectation("INS", false);
-  var peg$e90 = peg$otherExpectation("1.3.5.1. Forecast Maximum and Minimum Temperature groups (T(X)(N)[M]TFTF/YYGFGFZ)");
+  var peg$e90 = peg$otherExpectation("(T(X)(N)[M]TFTF/YYGFGFZ)");
   var peg$e91 = peg$literalExpectation("TX", false);
   var peg$e92 = peg$literalExpectation("TN", false);
   var peg$e93 = peg$literalExpectation("M", false);
@@ -350,17 +350,18 @@ function peg$parse(input, options) {
   var peg$e96 = peg$classExpectation([" ", "\t", "\n", "\r", " "], false, false);
   var peg$e97 = peg$classExpectation(["\n"], false, false);
 
-  var peg$f0 = function(type, issued, t) {
+  var peg$f0 = function(head, issued, t) {
+          const [type,AMD_COR,CCCC] = head
           const [ begin, end ] = t
-  		options.validate.times(type, { issued, begin, end }, range )
+  		options.validate.timeGroup(type, { issued, begin, end, AMD_COR }, range )
           return t
       };
-  var peg$f1 = function(type, issued, time, line) {  return [ type, time, line ] };
+  var peg$f1 = function(head, issued, time, pLine) {  return [ head, time, pLine ] };
   var peg$f2 = function(cccc) { 
-          return getLocation(cccc.join("")) 
+          return cccc.join("")
           };
   var peg$f3 = function(amd_cor) { 
-          return getLocation(amd_cor) 
+          return amd_cor
           };
   var peg$f4 = function(issued) { 
           return getUTCDate(issued)
@@ -370,23 +371,27 @@ function peg$parse(input, options) {
           };
   var peg$f6 = function(type, t) {
           const [ begin, end ] = t
-          options.validate.times( type, { begin, end }, range )
+          options.validate.timeGroup( type, { begin, end }, range )
           return t
       };
-  var peg$f7 = function(type, time, line) { return [ type, time, line ] };
-  var peg$f8 = function(value) {
-          return { value, range : range() }
+  var peg$f7 = function(type, time, pLine) { return [ type, time, pLine ] };
+  var peg$f8 = function(type, time, tempo) { return [ type, time, tempo ] };
+  var peg$f9 = function(value) {
+          return value
       };
-  var peg$f9 = function(ddfff, value) {
-          return { value, range : range() }
+  var peg$f10 = function(ddfff, value) {
+          
+          return  value
       };
-  var peg$f10 = function(ddfff, vvvv, ww, value) {
-          // console.log(vvvv, ww, NNNhhh)
-          options.validate.NNNhhh( [ vvvv.value, ww.value, value ], range )
-   
-          return { value, range : range() }
+  var peg$f11 = function(ddfff, vvvv, ww) {
+          options.validate.VVVVww( [ vvvv, ww ], range )
+          return ww
       };
-  var peg$f11 = function(line) {
+  var peg$f12 = function(ddfff, vvvv, ww, value) {
+          options.validate.NNNhhh( [ ww, value ], range )
+          return  value
+      };
+  var peg$f13 = function(line) {
   		// const [ dddff, vvvv, ww, nnnhhh, ...misc]=line
   		// if(!dddff && !ww.some(el => el !== null) && !nnnhhh)throw new EncodingException({
           //     message:"Tempo groups should contain either wind speed, present weather or cloud cover",
@@ -396,43 +401,45 @@ function peg$parse(input, options) {
               // console.log(vvvv,misc )
   		return line
   	};
-  var peg$f12 = function(hxhxhx, ddd, ff) {
+  var peg$f14 = function(hxhxhx, ddd, ff) {
           const height = Number(hxhxhx.flat().join(""))*100
-          return getLocation(["WS",height, ddd, Number(ff.join(""))])
+          return ["WS",height, ddd, Number(ff.join(""))]//getRange(["WS",height, ddd, Number(ff.join(""))])
       };
-  var peg$f13 = function(icing) {return getLocation(icing)};
-  var peg$f14 = function(turb) {return getLocation(turb)};
-  var peg$f15 = function(bH) { return bH.flat().join("")*100 };
-  var peg$f16 = function(tL) {return Number(tL)*1000};
-  var peg$f17 = function(ww) { return getRange(ww) };
-  var peg$f18 = function(ww) {return getLocation(ww.flat().join(""))};
-  var peg$f19 = function(ww) { return ww.join("") };
-  var peg$f20 = function(ww) {return ww.join("")};
-  var peg$f21 = function(ww) {return ww};
-  var peg$f22 = function(ww) { return ww.join("")};
-  var peg$f23 = function(direction, speed) {
-          const [sustained, gust] = speed
-          if(sustained === 0 && direction !== '000')throw new EncodingException({
-              message:"Forecast Gust Should be greater than Forecast Windspeeds",
-              expected:[{type:"literal", description:"When winds are calm, encode dddff as 00000KT; 00000KT @AFMAN 15-124 1.3.4.1.1"}],
-              found: location()
-              })
-           return [direction,...speed]
+  var peg$f15 = function(icing) {return icing};
+  var peg$f16 = function(turb) {return turb};
+  var peg$f17 = function(bH) { return bH.flat().join("")*100 };
+  var peg$f18 = function(tL) {return Number(tL)*1000};
+  var peg$f19 = function(ww) { return ww};
+  var peg$f20 = function(ww) {return ww.flat().join("")};
+  var peg$f21 = function(ww) { return ww.join("") };
+  var peg$f22 = function(ww) {return ww.join("")};
+  var peg$f23 = function(ww) {return ww};
+  var peg$f24 = function(ww) { return ww.join("")};
+  var peg$f25 = function(direction, speed) {
+          // const [sustained, gust] = speed
+          // if(sustained === 0 && direction !== '000')throw new EncodingException({
+          //     message:"Forecast Gust Should be greater than Forecast Windspeeds",
+          //     expected:[{type:"literal", description:"When winds are calm, encode dddff as 00000KT; 00000KT @AFMAN 15-124 1.3.4.1.1"}],
+          //     found: location()
+          //     })
+          options.validate.windGroup(direction,...speed, range)
+          return [direction,...speed]
        };
-  var peg$f24 = function(azi) {return azi.join("")};
-  var peg$f25 = function(ddd) {return ddd};
-  var peg$f26 = function(ffKT) {return [ffKT, null]};
-  var peg$f27 = function(ffG, fmfmKT) {
-          if(ffG>=fmfmKT) throw new EncodingException({
-  			type:'EncodingException',
-              message:"Forecast Gust Should be greater than Forecast Windspeeds",
-              expected:[{type:"literal", description:"When winds are calm, encode dddff as 00000KT; 00000KT @AFMAN 15-124 1.3.4.1.1"}],
-              found: location()
-              })
+  var peg$f26 = function(azi) {return azi.join("")};
+  var peg$f27 = function(ddd) {return ddd};
+  var peg$f28 = function(ffKT) {return [ffKT, null]};
+  var peg$f29 = function(ffG, fmfmKT) {
+          // if(ffG>=fmfmKT) throw new EncodingException({
+  		// 	type:'EncodingException',
+          //     message:"Forecast Gust Should be greater than Forecast Windspeeds",
+          //     expected:[{type:"literal", description:"When winds are calm, encode dddff as 00000KT; 00000KT @AFMAN 15-124 1.3.4.1.1"}],
+          //     found: location()
+          //     })
           return [ffG, fmfmKT]
       };
-  var peg$f28 = function(wind) {return Number(wind.join(""))};
-  var peg$f29 = function(value) { 
+  var peg$f30 = function(wind) {return Number(wind.join(""))};
+  var peg$f31 = function(value) { 
+              
               value = [Number(value.flat().join(""))]
               // const foundLocation = location()
   			
@@ -454,30 +461,30 @@ function peg$parse(input, options) {
 
               return value
               };
-  var peg$f30 = function(skc) {return [skc]};
-  var peg$f31 = function(NNNhhh) {return NNNhhh.filter(f=>f)};
-  var peg$f32 = function(nnn) { return [[nnn]] };
-  var peg$f33 = function(nnn, hhh) { return [nnn, hhh] };
-  var peg$f34 = function(nnnHHH, cb) { return [...nnnHHH, cb] };
-  var peg$f35 = function(nnn, hhh) { return [ nnn,hhh ] };
-  var peg$f36 = function(nnn, hhh, cb) { return [nnn, hhh, cb] };
-  var peg$f37 = function(cb) {return true};
-  var peg$f38 = function(base) {return Number(base.join("")*100) };
-  var peg$f39 = function(alt, stg) {
+  var peg$f32 = function(skc) {return [skc]};
+  var peg$f33 = function(NNNhhh) {return NNNhhh.filter(f=>f)};
+  var peg$f34 = function(nnn) { return [[nnn]] };
+  var peg$f35 = function(nnn, hhh) { return [nnn, hhh] };
+  var peg$f36 = function(nnnHHH, cb) { return [...nnnHHH, cb] };
+  var peg$f37 = function(nnn, hhh) { return [ nnn,hhh ] };
+  var peg$f38 = function(nnn, hhh, cb) { return [nnn, hhh, cb] };
+  var peg$f39 = function(cb) {return true};
+  var peg$f40 = function(base) {return Number(base.join("")*100) };
+  var peg$f41 = function(alt, stg) {
        return Number([alt.join(""),stg.join("")].join("."))
    };
-  var peg$f40 = function(tx, utc) { return ["TX",tx, utc] };
-  var peg$f41 = function(tn, utc) { return ["TN",tn,utc] };
-  var peg$f42 = function(tt) { 
+  var peg$f42 = function(tx, utc) { return ["TX",tx, utc] };
+  var peg$f43 = function(tn, utc) { return ["TN",tn,utc] };
+  var peg$f44 = function(tt) { 
           const [minus, ...temp] = tt
           if(!!minus) tt = ['-',...temp]
           return Number(tt.join(""))
        };
-  var peg$f43 = function(start, end) {return [start, end]};
-  var peg$f44 = function(DDHH) {return getUTCDate(DDHH)};
-  var peg$f45 = function(dd) {return dd.join("")};
-  var peg$f46 = function(hh) {return hh.join("") };
-  var peg$f47 = function(mm) { return mm.join("") };
+  var peg$f45 = function(start, end) {return [start, end]};
+  var peg$f46 = function(DDHH) {return getUTCDate(DDHH)};
+  var peg$f47 = function(dd) {return dd.join("")};
+  var peg$f48 = function(hh) {return hh.join("") };
+  var peg$f49 = function(mm) { return mm.join("") };
 
   var peg$currPos = 0;
   var peg$savedPos = 0;
@@ -1036,7 +1043,7 @@ function peg$parse(input, options) {
         if (s3 !== peg$FAILED) {
           s4 = peg$parseTemporaryLine();
           peg$savedPos = s0;
-          s0 = peg$f7(s2, s3, s4);
+          s0 = peg$f8(s2, s3, s4);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -1061,7 +1068,7 @@ function peg$parse(input, options) {
     s2 = peg$parseWindGroup();
     if (s2 !== peg$FAILED) {
       peg$savedPos = s1;
-      s2 = peg$f8(s2);
+      s2 = peg$f9(s2);
     }
     s1 = s2;
     if (s1 !== peg$FAILED) {
@@ -1069,16 +1076,20 @@ function peg$parse(input, options) {
       s3 = peg$parseVisibilityGroup();
       if (s3 !== peg$FAILED) {
         peg$savedPos = s2;
-        s3 = peg$f9(s1, s3);
+        s3 = peg$f10(s1, s3);
       }
       s2 = s3;
       if (s2 !== peg$FAILED) {
-        s3 = peg$parseWeatherGroup();
+        s3 = peg$currPos;
+        s4 = peg$parseWeatherGroup();
+        peg$savedPos = s3;
+        s4 = peg$f11(s1, s2, s4);
+        s3 = s4;
         s4 = peg$currPos;
         s5 = peg$parseCloudObscurationGroup();
         if (s5 !== peg$FAILED) {
           peg$savedPos = s4;
-          s5 = peg$f10(s1, s2, s3, s5);
+          s5 = peg$f12(s1, s2, s3, s5);
         }
         s4 = s5;
         if (s4 !== peg$FAILED) {
@@ -1155,7 +1166,7 @@ function peg$parse(input, options) {
     s2 = [s2, s3, s4, s5, s6, s7, s8];
     s1 = s2;
     peg$savedPos = s0;
-    s1 = peg$f11(s1);
+    s1 = peg$f13(s1);
     s0 = s1;
 
     return s0;
@@ -1334,7 +1345,7 @@ function peg$parse(input, options) {
                 }
                 if (s7 !== peg$FAILED) {
                   peg$savedPos = s0;
-                  s0 = peg$f12(s3, s5, s6);
+                  s0 = peg$f14(s3, s5, s6);
                 } else {
                   peg$currPos = s0;
                   s0 = peg$FAILED;
@@ -1420,7 +1431,7 @@ function peg$parse(input, options) {
       }
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f13(s2);
+        s0 = peg$f15(s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -1486,7 +1497,7 @@ function peg$parse(input, options) {
       }
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f14(s2);
+        s0 = peg$f16(s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -1656,7 +1667,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f15(s1);
+      s1 = peg$f17(s1);
     }
     s0 = s1;
 
@@ -1676,7 +1687,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f16(s1);
+      s1 = peg$f18(s1);
     }
     s0 = s1;
 
@@ -1711,7 +1722,7 @@ function peg$parse(input, options) {
     s2 = [s2, s3, s4, s5, s6];
     s1 = s2;
     peg$savedPos = s0;
-    s1 = peg$f17(s1);
+    s1 = peg$f19(s1);
     s0 = s1;
 
     return s0;
@@ -1844,7 +1855,7 @@ function peg$parse(input, options) {
       }
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f18(s2);
+        s0 = peg$f20(s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -1905,7 +1916,7 @@ function peg$parse(input, options) {
       }
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f19(s2);
+        s0 = peg$f21(s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -1968,7 +1979,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f20(s1);
+      s1 = peg$f22(s1);
     }
     s0 = s1;
 
@@ -2006,7 +2017,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f20(s1);
+      s1 = peg$f22(s1);
     }
     s0 = s1;
 
@@ -2053,7 +2064,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f20(s1);
+      s1 = peg$f22(s1);
     }
     s0 = s1;
 
@@ -2100,7 +2111,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f20(s1);
+      s1 = peg$f22(s1);
     }
     s0 = s1;
 
@@ -2138,7 +2149,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f20(s1);
+      s1 = peg$f22(s1);
     }
     s0 = s1;
 
@@ -2235,7 +2246,7 @@ function peg$parse(input, options) {
       }
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f21(s2);
+        s0 = peg$f23(s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -2279,7 +2290,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f20(s1);
+      s1 = peg$f22(s1);
     }
     s0 = s1;
 
@@ -2317,7 +2328,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f20(s1);
+      s1 = peg$f22(s1);
     }
     s0 = s1;
 
@@ -2375,7 +2386,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f22(s1);
+      s1 = peg$f24(s1);
     }
     s0 = s1;
 
@@ -2485,7 +2496,7 @@ function peg$parse(input, options) {
       }
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f21(s2);
+        s0 = peg$f23(s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -2540,7 +2551,7 @@ function peg$parse(input, options) {
       }
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f21(s2);
+        s0 = peg$f23(s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -2568,7 +2579,7 @@ function peg$parse(input, options) {
         }
         if (s3 !== peg$FAILED) {
           peg$savedPos = s0;
-          s0 = peg$f23(s2, s3);
+          s0 = peg$f25(s2, s3);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -2677,7 +2688,7 @@ function peg$parse(input, options) {
     }
     if (s2 !== peg$FAILED) {
       peg$savedPos = s1;
-      s2 = peg$f24(s2);
+      s2 = peg$f26(s2);
     }
     s1 = s2;
     if (s1 === peg$FAILED) {
@@ -2691,7 +2702,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f25(s1);
+      s1 = peg$f27(s1);
     }
     s0 = s1;
 
@@ -2713,7 +2724,7 @@ function peg$parse(input, options) {
       }
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f26(s1);
+        s0 = peg$f28(s1);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -2752,7 +2763,7 @@ function peg$parse(input, options) {
           }
           if (s4 !== peg$FAILED) {
             peg$savedPos = s0;
-            s0 = peg$f27(s1, s3);
+            s0 = peg$f29(s1, s3);
           } else {
             peg$currPos = s0;
             s0 = peg$FAILED;
@@ -2852,7 +2863,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f28(s1);
+      s1 = peg$f30(s1);
     }
     s0 = s1;
 
@@ -3163,7 +3174,7 @@ function peg$parse(input, options) {
       }
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f29(s2);
+        s0 = peg$f31(s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -3210,7 +3221,7 @@ function peg$parse(input, options) {
       }
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f30(s2);
+        s0 = peg$f32(s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -3263,7 +3274,7 @@ function peg$parse(input, options) {
     s2 = [s2, s3, s4, s5, s6, s7, s8, s9];
     s1 = s2;
     peg$savedPos = s0;
-    s1 = peg$f31(s1);
+    s1 = peg$f33(s1);
     s0 = s1;
 
     return s0;
@@ -3298,7 +3309,7 @@ function peg$parse(input, options) {
       }
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f32(s2);
+        s0 = peg$f34(s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -3329,7 +3340,7 @@ function peg$parse(input, options) {
         s3 = peg$parseCloudBase();
         if (s3 !== peg$FAILED) {
           peg$savedPos = s0;
-          s0 = peg$f33(s2, s3);
+          s0 = peg$f35(s2, s3);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -3369,7 +3380,7 @@ function peg$parse(input, options) {
         s3 = peg$parseCloudBase();
         if (s3 !== peg$FAILED) {
           peg$savedPos = s0;
-          s0 = peg$f33(s2, s3);
+          s0 = peg$f35(s2, s3);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -3402,7 +3413,7 @@ function peg$parse(input, options) {
         s2 = null;
       }
       peg$savedPos = s0;
-      s0 = peg$f34(s1, s2);
+      s0 = peg$f36(s1, s2);
     } else {
       peg$currPos = s0;
       s0 = peg$FAILED;
@@ -3429,7 +3440,7 @@ function peg$parse(input, options) {
         s3 = peg$parseCloudBase();
         if (s3 !== peg$FAILED) {
           peg$savedPos = s0;
-          s0 = peg$f35(s2, s3);
+          s0 = peg$f37(s2, s3);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -3462,7 +3473,7 @@ function peg$parse(input, options) {
         s2 = null;
       }
       peg$savedPos = s0;
-      s0 = peg$f34(s1, s2);
+      s0 = peg$f36(s1, s2);
     } else {
       peg$currPos = s0;
       s0 = peg$FAILED;
@@ -3493,7 +3504,7 @@ function peg$parse(input, options) {
             s4 = null;
           }
           peg$savedPos = s0;
-          s0 = peg$f36(s2, s3, s4);
+          s0 = peg$f38(s2, s3, s4);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -3528,7 +3539,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f37(s1);
+      s1 = peg$f39(s1);
     }
     s0 = s1;
 
@@ -3621,7 +3632,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f38(s1);
+      s1 = peg$f40(s1);
     }
     s0 = s1;
 
@@ -3708,7 +3719,7 @@ function peg$parse(input, options) {
             }
             if (s5 !== peg$FAILED) {
               peg$savedPos = s0;
-              s0 = peg$f39(s3, s4);
+              s0 = peg$f41(s3, s4);
             } else {
               peg$currPos = s0;
               s0 = peg$FAILED;
@@ -3801,7 +3812,7 @@ function peg$parse(input, options) {
               }
               if (s6 !== peg$FAILED) {
                 peg$savedPos = s0;
-                s0 = peg$f40(s3, s5);
+                s0 = peg$f42(s3, s5);
               } else {
                 peg$currPos = s0;
                 s0 = peg$FAILED;
@@ -3865,7 +3876,7 @@ function peg$parse(input, options) {
               }
               if (s6 !== peg$FAILED) {
                 peg$savedPos = s0;
-                s0 = peg$f41(s3, s5);
+                s0 = peg$f43(s3, s5);
               } else {
                 peg$currPos = s0;
                 s0 = peg$FAILED;
@@ -3937,7 +3948,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f42(s1);
+      s1 = peg$f44(s1);
     }
     s0 = s1;
 
@@ -3963,7 +3974,7 @@ function peg$parse(input, options) {
           s4 = peg$parseUTCDateHour();
           if (s4 !== peg$FAILED) {
             peg$savedPos = s0;
-            s0 = peg$f43(s2, s4);
+            s0 = peg$f45(s2, s4);
           } else {
             peg$currPos = s0;
             s0 = peg$FAILED;
@@ -4005,7 +4016,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f44(s1);
+      s1 = peg$f46(s1);
     }
     s0 = s1;
 
@@ -4074,7 +4085,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f45(s1);
+      s1 = peg$f47(s1);
     }
     s0 = s1;
 
@@ -4143,7 +4154,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f46(s1);
+      s1 = peg$f48(s1);
     }
     s0 = s1;
 
@@ -4183,7 +4194,7 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f47(s1);
+      s1 = peg$f49(s1);
     }
     s0 = s1;
 
@@ -4223,63 +4234,14 @@ function peg$parse(input, options) {
   		const { year, month } = options
   		return new Date(Date.UTC(year,month,...DDHHMM))//.g
   	}
-      function getLocation(value){
-          return {
-              value,
-              range:range()
-          }
-      }
-      function getRange(value){
-          return {
-              value,
-              range:range()
-          }
-      }
-      // function validateTimes ( type, [ start, stop ]){
-      //     // if start occur after stop
-      //     if (new Date(start) >= new Date(stop))
-      //         throw new EncodingException({
-      //             message:`${type} Group START time should occur before the END time`,
-      //             expected:[{
-      //                 type:"literal", 
-      //                 description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
-      //                 ],
-      //             found: location()
-      //             });
 
-      //     const diffrence = Math.abs(start - stop) / 36e5;
-      //     switch(type){
-      //         case 'BECMG':
-      //         //if diffrence is greater than 2
-      //         if ( diffrence > 2 ) 
-      //             throw new EncodingException({
-      //                 message:"The time-period described by a BECMG group is usually for one hour but never exceeds two hours",
-      //                 expected:[{
-      //                     type:"literal", 
-      //                     description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
-      //                     ],
-      //                 found: location()
-      //                 });
-
-      //             break
-      //         case 'TEMPO':
-      //         //if diffrence is greater than 2
-      //         if ( diffrence > 2 ) 
-      //             throw new EncodingException({
-      //                 message:"The time-period described by a BECMG group is usually for one hour but never exceeds two hours",
-      //                 expected:[{
-      //                     type:"literal", 
-      //                     description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
-      //                     ],
-      //                 found: location()
-      //                 });
-
-      //             break
-      //         default:
-      //             return
+      // function getRange(value){
+      //     return {
+      //         value,
+      //         range:range()
       //     }
-    
       // }
+
   	class EncodingException {
           type = "EncodingException"
   		constructor({ message, expected, found  }) {

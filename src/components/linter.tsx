@@ -1,173 +1,167 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Expression } from './expression';
 import Prism from 'prismjs';
-import { tafParser } from '../parsers';
+// import { tafParser } from '../parsers';
 import { useParser } from '../hooks/use-parser';
-// import { DateException, GeneralException } from '../exceptions';
-// import type { Found } from '../exceptions';
-// import { DateException } from '../exceptions';
-// import { DateValidator } from '../validators';
+
 
 export function Linter() {
-	const expressionRef: React.MutableRefObject<any> = useRef();
-	const { pass, error, tafString, errorString, setParserState } = useParser();
+    const expressionRef: React.MutableRefObject<any> = React.useRef();
+    const { pass, error, tafString, errorString, setParserState } = useParser();
 
-	const update = (text: string) => {
-		if (text[text.length - 1] === '\n') {
-			text += ' ';
-		}
-		setParserState(({ ...oldState }) => ({ ...oldState, tafString: text }));
-		// setCodeValue(({ ...old }) => ({ ...old, tafString: text }));
-		Prism.highlightElement(expressionRef.current);
-	};
-	const onInput = (e) => {
-		var text: string = e.target.value;
-		update(text);
-	};
+    const update = (text: string) => {
+        if (text[text.length - 1] === '\n') {
+            text += ' ';
+        }
+        setParserState(({ ...oldState }) => ({ ...oldState, tafString: text }));
+        // setCodeValue(({ ...old }) => ({ ...old, tafString: text }));
+        Prism.highlightElement(expressionRef.current);
+    };
+    const onInput = (e) => {
+        var text: string = e.target.value;
+        update(text);
+    };
 
-	useEffect(() => {
-		if (!!error) {
-			// console.log(error);
-			try {
-				error.expected.forEach((e) => {
-					try {
-						switch (e.type) {
-							case 'literal':
-								// console.log(e.text);
-								break;
-							default:
-								break;
-						}
-						const a = e.description.split(/\s*;\s*|\s*@\s*/);
-						// console.log(a);
-						// const [expected, ref] = e.description.split(/\s*@\s*/);
-						// console.log([...expected.split(/\[.*\]/), ref]);
-					} catch (err) {
-						// console.log('ERROR SPLIT REPORTING NOT SUPPORTED', err);
-					}
-				});
-			} catch (e) {}
-		}
-	}, [error]);
-	const onKeyDown = (e) => {
-		const element = e.target;
-		let code = element.value;
-		switch (e.key) {
-			case 'Tab':
-				e.preventDefault();
-				let before_tab = code.slice(0, element.selectionStart);
-				let after_tab = code.slice(element.selectionEnd, element.value.length); // text after tab
-				let cursor_pos = element.selectionEnd + 1;
-				element.value = before_tab + '\t' + after_tab; // add tab char
-				// move cursor
-				element.selectionStart = cursor_pos;
-				element.selectionEnd = cursor_pos;
-				update(element.value);
-				break;
-			default:
-				return;
-		}
-	};
+    // useEffect(() => {
+    // 	if (!!error) {
+    // 		// console.log(error);
+    // 		try {
+    // 			error.expected.forEach((e) => {
+    // 				try {
+    // 					switch (e.type) {
+    // 						case 'literal':
+    // 							// console.log(e.text);
+    // 							break;
+    // 						default:
+    // 							break;
+    // 					}
+    // 					const a = e.description.split(/\s*;\s*|\s*@\s*/);
+    // 					// console.log(a);
+    // 					// const [expected, ref] = e.description.split(/\s*@\s*/);
+    // 					// console.log([...expected.split(/\[.*\]/), ref]);
+    // 				} catch (err) {
+    // 					// console.log('ERROR SPLIT REPORTING NOT SUPPORTED', err);
+    // 				}
+    // 			});
+    // 		} catch (e) {}
+    // 	}
+    // }, [error]);
+    const onKeyDown = (e) => {
+        const element = e.target;
+        let code = element.value;
+        switch (e.key) {
+            case 'Tab':
+                e.preventDefault();
+                let before_tab = code.slice(0, element.selectionStart);
+                let after_tab = code.slice(element.selectionEnd, element.value.length); // text after tab
+                let cursor_pos = element.selectionEnd + 1;
+                element.value = before_tab + '\t' + after_tab; // add tab char
+                // move cursor
+                element.selectionStart = cursor_pos;
+                element.selectionEnd = cursor_pos;
+                update(element.value);
+                break;
+            default:
+                return;
+        }
+    };
 
-	return (
-		<div style={{ color: 'white' }}>
-			dsds
-			{JSON.stringify(tafParser.SyntaxError)}
-			<Expression ref={expressionRef} onInput={onInput} onKeyDown={onKeyDown} value={tafString} errorOverlay={errorString} />
-			<PassFailDisplay pass={pass} error={error} />
-			{!!error ? JSON.stringify(error.location) : null}
-		</div>
-	);
+    return (
+        <div style={{ color: 'white' }}>
+            <Expression ref={expressionRef} onInput={onInput} onKeyDown={onKeyDown} value={tafString} errorOverlay={errorString} />
+            <PassFailDisplay pass={pass} error={error} />
+        </div>
+    );
 }
 
 function PassFailDisplay({ pass, error }) {
-	return (
-		<div
-			//\
-			style={{
-				//
-				color: 'white',
-				position: 'relative',
-				width: 800,
-				border: `solid ${!!pass ? 'green' : 'red'}`,
-				backgroundColor: 'black',
-			}}>
-			{!!pass ? <Pass data={pass} /> : !!error ? <Fail data={error} /> : null}
-		</div>
-	);
+    return (
+        <div
+            //\
+            style={{
+                //
+                color: 'white',
+                position: 'relative',
+                width: 800,
+                border: `solid ${!!pass ? 'green' : 'red'}`,
+                backgroundColor: 'black',
+            }}>
+            {!!pass ? <Pass data={pass} /> : !!error ? <Fail data={error} /> : null}
+        </div>
+    );
 }
 
 function Pass({ data }) {
-	const [header, changeGroups, temperatureGroup] = data;
-	return (
-		<div>
-			<TypeTimeLine datums={header} />
-			{!!changeGroups ? changeGroups.map((group) => <TypeTimeLine datums={group} />) : null}
-			TEMPERATURE GROUP:
-			<br />
-			{JSON.stringify(temperatureGroup)}
-			<br /> <br />
-			Destructuring:
-			<br />
-			LINE:[
-			<br />
-			<Indent>[ddd ff (Gfmfm | null)] VVVV [ WW[] ] </Indent>
-			<Indent>[[NsNsNs hshshs CC][...] || SKC] ( [VAbbbttt] | null ) ( [WShxhxhx/dddfffKT] | null )</Indent>
-			<Indent> ( [6IchihihitL] | null ) ( [5BhBhBhBtL] | null ) [QNHP1P1P1P1INS] (Remarks)</Indent>
-			]<br />
-			WW:[[ PRECIP ] [ OBSCURATION ] [ VC ]]
-			<br />
-			PRECIP:[INTENSITY DESCRIPTOR PRECIPITATION PRECIPITATION?]
-			<br />
-			OBSCURATION:
-			<br />
-			VC:
-		</div>
-	);
+    const [header, changeGroups, temperatureGroup] = data;
+    return (
+        <div>
+            <TypeTimeLine datums={header} />
+            {!!changeGroups ? changeGroups.map((group) => <TypeTimeLine datums={group} />) : null}
+            TEMPERATURE GROUP:
+            <br />
+            {JSON.stringify(temperatureGroup)}
+            <br /> <br />
+            Destructuring:
+            <br />
+            LINE:[
+            <br />
+            <Indent>[ddd ff (Gfmfm | null)] VVVV [ WW[] ] </Indent>
+            <Indent>[[NsNsNs hshshs CC][...] || SKC] ( [VAbbbttt] | null ) ( [WShxhxhx/dddfffKT] | null )</Indent>
+            <Indent> ( [6IchihihitL] | null ) ( [5BhBhBhBtL] | null ) [QNHP1P1P1P1INS] (Remarks)</Indent>
+            ]<br />
+            WW:[[ PRECIP ] [ OBSCURATION ] [ VC ]]
+            <br />
+            PRECIP:[INTENSITY DESCRIPTOR PRECIPITATION PRECIPITATION?]
+            <br />
+            OBSCURATION:
+            <br />
+            VC:
+        </div>
+    );
 }
 
 const Indent = ({ ...props }) => <div style={{ textIndent: '20px' }} {...props} />;
 
 function TypeTimeLine({ datums }) {
-	const [type, time, line] = datums;
-	return (
-		<>
-			TYPE:
-			{JSON.stringify(type)}
-			<br />
-			TIME:
-			{JSON.stringify(time)}
-			<br />
-			LINE:
-			<br />
-			{JSON.stringify(line)}
-			<br /> <br />
-		</>
-	);
+    const [type, time, line] = datums;
+    return (
+        <>
+            TYPE:
+            {JSON.stringify(type)}
+            <br />
+            TIME:
+            {JSON.stringify(time)}
+            <br />
+            LINE:
+            <br />
+            {JSON.stringify(line)}
+            <br /> <br />
+        </>
+    );
 }
 
 function Fail({ data }) {
-	console.log(data);
-	return (
-		<div>
-			Error Name:
-			<div>{JSON.stringify(data.name)}</div>
-			<br />
-			Error Message:
-			<div>{JSON.stringify(data.message)}</div>
-			<br />
-			Expected:
-			<div>{JSON.stringify(data.expected)}</div>
-			<br />
-			Error Found:
-			<div>{JSON.stringify(data.found)}</div>
-			<br />
-			Error Location:
-			<div>{JSON.stringify(data.location)}</div>
-			<br />
-			{/* <div>{JSON.stringify({ data })}</div> */}
-		</div>
-	);
+    console.log(data);
+    return (
+        <div>
+            Error Name:
+            <div>{JSON.stringify(data.name)}</div>
+            <br />
+            Error Message:
+            <div>{JSON.stringify(data.message)}</div>
+            <br />
+            Expected:
+            <div>{JSON.stringify(data.expected)}</div>
+            <br />
+            Error Found:
+            <div>{JSON.stringify(data.found)}</div>
+            <br />
+            Error Location:
+            <div>{JSON.stringify(data.location)}</div>
+            <br />
+            {/* <div>{JSON.stringify({ data })}</div> */}
+        </div>
+    );
 }
 
 // Expected,Found
@@ -361,7 +355,7 @@ function Fail({ data }) {
 // 	start: { offset: number; line: number; column: number };
 // };
 type ValidatorOptions = {
-	isConusLocation: boolean;
+    isConusLocation: boolean;
 };
 
 // class Validator {

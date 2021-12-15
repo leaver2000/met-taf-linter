@@ -5,63 +5,14 @@
 		const { year, month } = options
 		return new Date(Date.UTC(year,month,...DDHHMM))//.g
 	}
-    function getLocation(value){
-        return {
-            value,
-            range:range()
-        }
-    }
-    function getRange(value){
-        return {
-            value,
-            range:range()
-        }
-    }
-    // function validateTimes ( type, [ start, stop ]){
-    //     // if start occur after stop
-    //     if (new Date(start) >= new Date(stop))
-    //         throw new EncodingException({
-    //             message:`${type} Group START time should occur before the END time`,
-    //             expected:[{
-    //                 type:"literal", 
-    //                 description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
-    //                 ],
-    //             found: location()
-    //             });
 
-    //     const diffrence = Math.abs(start - stop) / 36e5;
-    //     switch(type){
-    //         case 'BECMG':
-    //         //if diffrence is greater than 2
-    //         if ( diffrence > 2 ) 
-    //             throw new EncodingException({
-    //                 message:"The time-period described by a BECMG group is usually for one hour but never exceeds two hours",
-    //                 expected:[{
-    //                     type:"literal", 
-    //                     description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
-    //                     ],
-    //                 found: location()
-    //                 });
-
-    //             break
-    //         case 'TEMPO':
-    //         //if diffrence is greater than 2
-    //         if ( diffrence > 2 ) 
-    //             throw new EncodingException({
-    //                 message:"The time-period described by a BECMG group is usually for one hour but never exceeds two hours",
-    //                 expected:[{
-    //                     type:"literal", 
-    //                     description:"BLAH; YYG1G1/YYG2G2 @AFMAN 15-124 1.3.2.1.5."}
-    //                     ],
-    //                 found: location()
-    //                 });
-
-    //             break
-    //         default:
-    //             return
+    // function getRange(value){
+    //     return {
+    //         value,
+    //         range:range()
     //     }
-  
     // }
+
 	class EncodingException {
         type = "EncodingException"
 		constructor({ message, expected, found  }) {
@@ -79,23 +30,24 @@ RUN = MessageHeading (( BecomingGroup / TemporaryGroup )+)? TemperatureGroup
 //** ----| Message Heading (TAF [AMD or COR] CCCC YYGGggZ YYG1G1/YYG2G2). |---------
 
 MessageHeading = 
-    type:("TAF" AMD_COR? CCCC )
+    head:("TAF" AMD_COR? CCCC )
     issued:Issued
     time:(t:Period {
+        const [type,AMD_COR,CCCC] = head
         const [ begin, end ] = t
-		options.validate.times(type, { issued, begin, end }, range )
+		options.validate.timeGroup(type, { issued, begin, end, AMD_COR }, range )
         return t
     })
-    line: PredominateLine {  return [ type, time, line ] }
+    pLine: PredominateLine {  return [ head, time, pLine ] }
 
 CCCC "ICAO; CCCC @AFMAN 15-124 1.3.2.1.3" = __
     cccc:( [A-Z][A-Z][A-Z][A-Z] )  { 
-        return getLocation(cccc.join("")) 
+        return cccc.join("")
         }
 
 AMD_COR 'AMD or COR; ("AMD" || "COR")? @AFMAN 15-124 1.3.2.1.2.' = __
     amd_cor:( "AMD" / "COR" ) { 
-        return getLocation(amd_cor) 
+        return amd_cor
         }
 
 Issued "Issue Date and Time YYGGggZ; DDHHMMZ @AFMAN 15-124 1.3.2.1.4." = __
@@ -113,10 +65,10 @@ BecomingGroup = _NewLine
     type:"BECMG"
 	time:( t: UTCStartStop {
         const [ begin, end ] = t
-        options.validate.times( type, { begin, end }, range )
+        options.validate.timeGroup( type, { begin, end }, range )
         return t
     })
-	line:PredominateLine { return [ type, time, line ] }
+	pLine:PredominateLine { return [ type, time, pLine ] }
 
 
 //** -----------------------|  TemporaryGroup   |-----------------------------------
@@ -124,39 +76,34 @@ TemporaryGroup = _NewLine
     type:"TEMPO" 
     time:( t: UTCStartStop {
         const [ begin, end ] = t
-        options.validate.times( type, { begin, end }, range )
+        options.validate.timeGroup( type, { begin, end }, range )
         return t
     })
-    line:TemporaryLine { return [ type, time, line ] }
+    tempo:TemporaryLine { return [ type, time, tempo ] }
 
 //** -----------------------|   PredominateLine  |-----------------------------------
 
 PredominateLine = 
-    ddfff:(value:WindGroup{
-        return { value, range : range() }
+    ddfff:( value: WindGroup {
+        return value
     } )
-    vvvv:(value:VisibilityGroup{
-        return { value, range : range() }
-    } )
-    ww:WeatherGroup
-    // ww:(value:WeatherGroup { 
-
-    //     return { value, range : range() }
-    //     })
-    NNNhhh:(value:CloudObscurationGroup{
-        // console.log(vvvv, ww, NNNhhh)
-        options.validate.NNNhhh( [ vvvv.value, ww.value, value ], range )
- 
-        return { value, range : range() }
+    vvvv:( value: VisibilityGroup {
+        
+        return  value
+    })
+    ww:(ww:WeatherGroup{
+        options.validate.VVVVww( [ vvvv, ww ], range )
+        return ww
+    })
+    NNNhhh:( value : CloudObscurationGroup {
+        options.validate.NNNhhh( [ ww, value ], range )
+        return  value
     })
 	va:VolcanicAshGroup? 
 	llws:LowLevelWindShearGroup? 
 	ice:IcingGroup? 
 	turb:TurbulenceGroup? 
 	altsg:LowestAltimeterGroup
-
-
-
 
 //** -----------------------|   TemporaryLine  |-----------------------------------
 TemporaryLine = 
@@ -188,7 +135,7 @@ LowLevelWindShearGroup "Non-Convective Low-Level Wind Shear Group; (WShxhxhx/ddd
     hxhxhx:([0]([0,1][0-9]/[2][0])) "/" 
     ddd:Direction ff:([0-9][0-9])"KT" {
         const height = Number(hxhxhx.flat().join(""))*100
-        return getLocation(["WS",height, ddd, Number(ff.join(""))])
+        return ["WS",height, ddd, Number(ff.join(""))]//getRange(["WS",height, ddd, Number(ff.join(""))])
     }
 
 //-------------|1.3.10. Icing Group && 1.3.11. Turbulence Group ---------
@@ -201,11 +148,11 @@ LowLevelWindShearGroup "Non-Convective Low-Level Wind Shear Group; (WShxhxhx/ddd
 
 //-------------|(6IchihihitL)  |---------
 IcingGroup "Icing Group; (6IchihihitL) @AFMAN 15-124 1.3.10." = __ 
-    icing:( [6][0-9] BaseHeight Thickness) {return getLocation(icing)}
+    icing:( [6][0-9] BaseHeight Thickness) {return icing}//getRange(icing)}
 
 //-------------| (5BhBhBhBtL) |-------
 TurbulenceGroup "Turbulence group; (5BhBhBhBtL) @AFMAN 15-124 1.3.11." = __ 
-    turb:([5][0-9]BaseHeight Thickness) {return getLocation(turb)}
+    turb:([5][0-9]BaseHeight Thickness) {return turb}//getRange(turb)}
 //	BASE HEIGHT
 BaseHeight = bH:(([0]([0][0-9] / [1][0,1] /[9][9])) / ([1][0,1,2][0]))   { return bH.flat().join("")*100 }
 //	THICKNESS
@@ -227,7 +174,7 @@ WeatherGroup =
         Obscuration? 
         Vicinity? 
         Other?
-        ){ return getRange(ww) }
+        ){ return ww}//getRange(ww) }
     // value:( FunnelCloud? Precipitation? Obscuration? Vicinity? Other? ) {
 
     //     // if (ww.filter(n => n).length>3)
@@ -248,7 +195,7 @@ WeatherGroup =
 //////////////////////////////////// 1.) DESCRIPTORS ///////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 Vicinity = __ 
-    ww:("VC" ("TS" / "SH" / "FG" / ("BL" ("SN" / "DU" / "SA")) / "PO" / "SS" / "DS" )){return getLocation(ww.flat().join(""))};
+    ww:("VC" ("TS" / "SH" / "FG" / ("BL" ("SN" / "DU" / "SA")) / "PO" / "SS" / "DS" )){return ww.flat().join("")}//getRange(ww.flat().join(""))};
 
 // Intensity = (LGT/HVY)?
 // HVY = "+"
@@ -319,6 +266,7 @@ Smoke ="FU"
 VolcanicAsh = "VA"
 Sand ="SA"
 Haze = "HZ"
+// 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 // BR = "BR"
@@ -348,13 +296,14 @@ Other = __
 WindGroup "WindGroup Surface wind direction, speed and gusts, if any; dddffGfmfmKT @AFMAN 15-124 1.3.4." = __ 
     direction:Direction 
     speed:( Sustained / Gusting )  {
-        const [sustained, gust] = speed
-        if(sustained === 0 && direction !== '000')throw new EncodingException({
-            message:"Forecast Gust Should be greater than Forecast Windspeeds",
-            expected:[{type:"literal", description:"When winds are calm, encode dddff as 00000KT; 00000KT @AFMAN 15-124 1.3.4.1.1"}],
-            found: location()
-            })
-         return [direction,...speed]
+        // const [sustained, gust] = speed
+        // if(sustained === 0 && direction !== '000')throw new EncodingException({
+        //     message:"Forecast Gust Should be greater than Forecast Windspeeds",
+        //     expected:[{type:"literal", description:"When winds are calm, encode dddff as 00000KT; 00000KT @AFMAN 15-124 1.3.4.1.1"}],
+        //     found: location()
+        //     })
+        options.validate.windGroup(direction,...speed, range)
+        return [direction,...speed]
      };
 
 Direction = 
@@ -366,12 +315,12 @@ Sustained =
 Gusting "Wind Gusts" =
     ffG:Wind "G" 
     fmfmKT:Wind "KT" {
-        if(ffG>=fmfmKT) throw new EncodingException({
-			type:'EncodingException',
-            message:"Forecast Gust Should be greater than Forecast Windspeeds",
-            expected:[{type:"literal", description:"When winds are calm, encode dddff as 00000KT; 00000KT @AFMAN 15-124 1.3.4.1.1"}],
-            found: location()
-            })
+        // if(ffG>=fmfmKT) throw new EncodingException({
+		// 	type:'EncodingException',
+        //     message:"Forecast Gust Should be greater than Forecast Windspeeds",
+        //     expected:[{type:"literal", description:"When winds are calm, encode dddff as 00000KT; 00000KT @AFMAN 15-124 1.3.4.1.1"}],
+        //     found: location()
+        //     })
         return [ffG, fmfmKT]
     }
 
@@ -395,6 +344,7 @@ VisibilityGroup "Visibility Group (VVVV)" = __
         [5-9][0]ZZ /
 		[9][9][9][9]
         ) { 
+            
             value = [Number(value.flat().join(""))]
             // const foundLocation = location()
 			
@@ -479,8 +429,8 @@ LowestAltimeterGroup "1.3.12. Lowest Altimeter group (QNHP1P1P1P1INS)" = __
 
 //** -------| Forecast Maximum and Minimum Temperature groups |--------------------
 
-TemperatureGroup "1.3.5.1. Forecast Maximum and Minimum Temperature groups (T(X)(N)[M]TFTF/YYGFGFZ)"= 
-MaxTemp MinTemp
+TemperatureGroup "(T(X)(N)[M]TFTF/YYGFGFZ)"= 
+	MaxTemp MinTemp
 
 MaxTemp = __ 
     "TX" 

@@ -1,2 +1,3 @@
 import DateValidator from './date-validator';
-export { DateValidator };
+import Validator from './validator'
+export { DateValidator, Validator };
