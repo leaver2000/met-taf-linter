@@ -195,7 +195,13 @@ Report as often as necessary to indicate all forecast cloud layers up to the fir
 Arrange groups in ascending order of cloud bases AGL (e.g., lowest base first). (T-0)
 */
 CloudObscurationGroup = NNNhhh:( SKC / VerticalVisibility / CloudAmount ) {
-    return NNNhhh.filter(f=>f)
+    const value = NNNhhh.filter(f=>f)
+    if(!value.length) {
+        const message ="message"
+        throw new  peg$SyntaxError(message,[{type:"litteral",description:"SKC"}]," ",location())
+
+        }
+    return value
     }
 
 SKC = __ 
@@ -342,7 +348,7 @@ Dust =
 Spray = 
     ww:(("BL")?"PY"){return ww.join("")}
 
-Fog = ww:(( "PR" / "BC" / "MI") "FG") { return ww.join("")}
+Fog = ww:(( "PR" / "BC" / "MI")? "FG") { return ww.join("")}
 
 Mist = "BR"
 Smoke ="FU" 

@@ -8,6 +8,12 @@ const _shiftRange = ({ start, end }: { start: number; end: number }, o1: number,
 };
 const _TS = /TS/;
 const _CALM = '00000KT';
+const AFM_15_124: { [key: string]: string } = {
+	'1.3.7': `
+    AFMAN_15_124: 1.3.7: Cloud and Obscuration Group (NsNsNshshshsCC).
+    Report as often as necessary to indicate all forecast cloud layers up to the first overcast layer.
+    Arrange groups in ascending order of cloud bases AGL (e.g., lowest base first). (T-0)`,
+};
 /**
  *
  * MESSAGE HEADING:
@@ -144,94 +150,106 @@ export default class Validator {
 		}
 		//* if visibility is Not unrestricted and presentWeather is null throw Error
 		if (VVVV !== 9999 && !wwLength) {
-			const message = 'visiblity less than 9999 requires a visibility restrictor';
+			const message = `visiblity less than 9999 requires a visibility restrictor ${AFM_15_124['1.3.7']}`;
 			const expected = [{ type: 'literal', description: 'SHRA' }];
 			throw new EncodingError(message, expected, _shiftRange(range(), -4, +1));
 		}
 	}
 
 	_ww_NNNhhhCC([[vvvv], ww, NNNhhhCC]: NNNhhhProps, range: () => ExceptionRange) {
-		const obscuratiomSwitch = function (type: string) {
-			switch (type) {
-				case 'BR':
-					if (vvvv < 999) {
-						const message = 'Do not use BR with forecast visibility less than 1000M';
-						const expected = [{ type: 'literal', description: 'FG' }];
+		var type: string = 'literal';
+		var description: string;
+		const obscuratiomSwitch = function (obscType: string) {
+			switch (obscType) {
+				case 'FG':
+					if (vvvv > 999) {
+						const message = 'Do not encode FG with forecast visibility greater than 1000M';
+						description = 'BR';
+						const expected = [{ type, description }];
 						throw new EncodingError(message, expected, _shiftRange(range(), -7, -6));
 					}
-					return;
+					break;
+
+				case 'BR':
+					if (vvvv < 999) {
+						const message = 'Do not encode BR with forecast visibility less than 1000M';
+						description = 'FG';
+						const expected = [{ type, description }];
+						throw new EncodingError(message, expected, _shiftRange(range(), -7, -6));
+					}
+					break;
 				default:
 					return;
 			}
 		};
-		// lowest layer is at the surface
-		if (!NNNhhhCC.length) {
-			const message = 'NNNhhhCC Group is required';
-			const expected = [{ type: 'literal', description: 'SKC' }];
-			throw new EncodingError(message, expected, _shiftRange(range(), 0, +4));
-		} else {
-			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			const [fc, precip, obsc, vc, other] = ww;
-			const TSRA = !!precip ? _TS.test(precip) : !!precip;
-			const VCTS = vc === 'VCTS';
-			const lowestCloudLayerHeight = NNNhhhCC[0][1];
-			const TS_Flag = TSRA || VCTS;
-			if (!!obsc) obscuratiomSwitch(obsc);
 
-			if (lowestCloudLayerHeight === 0 && vvvv > 1000) {
-				/** Surface Based Partial Obscuration   */
-				const message = 'Surface Based Partial Obscuration';
-				const expected = [
-					{ type: 'literal', description: 'SKC' },
-					{ type: 'literal', description: '1000' },
-				];
-				throw new EncodingError(message, expected, _shiftRange(range(), -7, +1));
-			}
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
+		const [fc, precip, obsc, vc, other] = ww;
+		const TSRA = !!precip ? _TS.test(precip) : !!precip;
+		const VCTS = vc === 'VCTS';
+		const lowestCloudLayerHeight = NNNhhhCC[0][1];
+		const TS_Flag = TSRA || VCTS;
+		if (!!obsc) obscuratiomSwitch(obsc);
 
-			const CB_Flag = !!NNNhhhCC.reduce(
-				//
-				([_NNN, _hhh, _CC], [NNN, hhh, CC]) => {
-					// height is greater than previous layer
-					if (_hhh >= hhh) {
-						const message = 'forecasted height of secondary layer should be higher than the previous layer';
-						const expected = [{ type: '', description: 'description' }];
-						throw new EncodingError(message, expected, range());
-					}
-
-					/** CB on current && memo */
-					if (!!CC && !!_CC) {
-						const message = 'do not encode CB remarks on multiple layers';
-						const description = [
-							//
-							[_NNN, _format_hhh(_hhh), 'CB'].join(''),
-							[NNN, _format_hhh(hhh)].join(''),
-						].join(' ');
-						const expected = [{ type: '', description }];
-						throw new EncodingError(message, expected, range());
-					}
-
-					// return the memoized values only a true CC value is returned
-					// catch true CC instances across multiple layers
-					return [NNN, hhh, !!CC ? CC : _CC];
-				},
-				['', -1, false]
-				// the CB_flag is popped from the returned result
-			).pop();
-
-			const shouldHaveFlag = TS_Flag && !CB_Flag;
-			const shouldNotHaveFlag = !TS_Flag && CB_Flag;
-
-			if (shouldHaveFlag || shouldNotHaveFlag) {
-				const message = shouldHaveFlag ? 'as CB remark is required when encoding TS' : 'do not encode a CB remark when TS or VCTS are not forecast';
-				const expected = [{ type: 'literal', text: 'CB', ignoreCase: false }];
-				throw new EncodingError(message, expected, range());
-			}
+		/** Surface Based Partial Obscuration   */
+		if (lowestCloudLayerHeight === 0 && vvvv > 1000) {
+			const message = 'Surface Based Partial Obscuration';
+			const expected = [
+				{ type: 'literal', description: 'SKC' },
+				{ type: 'literal', description: '1000' },
+			];
+			throw new EncodingError(message, expected, _shiftRange(range(), -7, +1));
 		}
+		/**
+		 * itterate the NNNhhhCC group
+		 * destructure the the array
+		 * validate CB remarks
+		 * */
+		const CB_Flag = !!NNNhhhCC.reduce(
+			//
+			([_NNN, _hhh, _CC], [NNN, hhh, CC]) => {
+				// height is greater than previous layer
+				if (_hhh >= hhh) {
+					const message = 'forecasted height of secondary layer should be higher than the previous layer';
+					const expected = [{ type: '', description: 'description' }];
+					throw new EncodingError(message, expected, range());
+				}
+
+				/** CB on current && memo */
+				if (!!CC && !!_CC) {
+					const message = 'do not encode CB remarks on multiple layers';
+					const description = [
+						//
+						[_NNN, _format_hhh(_hhh), 'CB'].join(''),
+						[NNN, _format_hhh(hhh)].join(''),
+					].join(' ');
+					const expected = [{ type: '', description }];
+					throw new EncodingError(message, expected, range());
+				}
+				// return the memoized values only a true CC value is returned
+				// catch true CC instances across multiple layers
+				return [NNN, hhh, !!CC ? CC : _CC];
+			},
+			['', -1, false]
+			// the CB_flag is popped from the returned result
+		).pop();
+
+		const shouldHaveFlag = TS_Flag && !CB_Flag;
+		const shouldNotHaveFlag = !TS_Flag && CB_Flag;
+
+		if (shouldHaveFlag || shouldNotHaveFlag) {
+			const message = shouldHaveFlag ? 'as CB remark is required when encoding TS' : 'do not encode a CB remark when TS or VCTS are not forecast';
+			const expected = [{ type: 'literal', text: 'CB', ignoreCase: false }];
+			throw new EncodingError(message, expected, range());
+		}
+
 		return;
 	}
+	/** 1.3.11. Turbulence Group*/
 	_five_group() {
 		///
 	}
+	/**Icing Group; (6IchihihitL) */
 	_six_group() {
 		///
 	}

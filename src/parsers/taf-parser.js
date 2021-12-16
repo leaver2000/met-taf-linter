@@ -406,7 +406,13 @@ function peg$parse(input, options) {
   var peg$f28 = function(wind) {return Number(wind.join(""))};
   var peg$f29 = function(VVVV) { return validate._VVVV([Number(VVVV.flat().join(""))], range) };
   var peg$f30 = function(NNNhhh) {
-      return NNNhhh.filter(f=>f)
+      const value = NNNhhh.filter(f=>f)
+      if(!value.length) {
+          const message ="message"
+          throw new  peg$SyntaxError(message,[{type:"litteral",description:"SKC"}]," ",location())
+
+          }
+      return value
       };
   var peg$f31 = function(skc) {return [[skc]]};
   var peg$f32 = function(nnn, hhh) {
@@ -3584,21 +3590,19 @@ function peg$parse(input, options) {
         }
       }
     }
-    if (s2 !== peg$FAILED) {
-      if (input.substr(peg$currPos, 2) === peg$c36) {
-        s3 = peg$c36;
-        peg$currPos += 2;
-      } else {
-        s3 = peg$FAILED;
-        if (peg$silentFails === 0) { peg$fail(peg$e72); }
-      }
-      if (s3 !== peg$FAILED) {
-        s2 = [s2, s3];
-        s1 = s2;
-      } else {
-        peg$currPos = s1;
-        s1 = peg$FAILED;
-      }
+    if (s2 === peg$FAILED) {
+      s2 = null;
+    }
+    if (input.substr(peg$currPos, 2) === peg$c36) {
+      s3 = peg$c36;
+      peg$currPos += 2;
+    } else {
+      s3 = peg$FAILED;
+      if (peg$silentFails === 0) { peg$fail(peg$e72); }
+    }
+    if (s3 !== peg$FAILED) {
+      s2 = [s2, s3];
+      s1 = s2;
     } else {
       peg$currPos = s1;
       s1 = peg$FAILED;
