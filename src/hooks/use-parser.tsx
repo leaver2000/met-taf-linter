@@ -3,10 +3,10 @@ import { tafParser } from '../parsers';
 import { Validator } from '../validators';
 
 type ParseState = {
-	tafString: string | any;
-	date: Date;
-	success: null | any;
-	error: null | any;
+    tafString: string | any;
+    date: Date;
+    success: null | any;
+    error: null | any;
 };
 const sampleTaf = `\
 TAF KADW 280100Z 0701/0807 01010KT 8000 TSRA BKN030CB QNH2902INS
@@ -14,87 +14,91 @@ BECMG 0704/0705 01015G17KT 9999 BKN020 BKN025 QNH2902INS
 BECMG 0705/0706 VRB06KT 9999 BKN020 QNH2902INS TX13/0421Z TNM03/0508Z\
 `;
 export function useParser() {
-	const [{ success, error, tafString, date }, setParserState] = React.useState<ParseState>({
-		//
-		success: null,
-		error: null,
-		tafString: sampleTaf,
-		date: new Date(),
-	}); //
+    const [{ success, error, tafString, date }, setParserState] = React.useState<ParseState>({
+        //
+        success: null,
+        error: null,
+        tafString: sampleTaf,
+        date: new Date(),
+    }); //
 
-	const [errorString, setErrorString] = React.useState<null | any>(null);
+    const [errorString, setErrorString] = React.useState<null | any>(null);
 
-	const utcDateValues = React.useMemo(
-		() => ({
-			//
-			UTCString: date.toUTCString(),
-			year: date.getUTCFullYear(),
-			month: date.getUTCMonth(),
-			day: date.getUTCDate(),
-		}),
-		[date]
-	);
-	const onChange = React.useCallback(
-		(success, error) => {
-			// sets the error state for pass and failure
-			setParserState(({ ...oldState }) => ({ ...oldState, success, error }));
-			if (!!error) {
-				const { start, end } = error.location;
-				const arrayOfStrings = (function (type) {
-					switch (type) {
-						case 'DateTimeError':
-						case 'EncodingError':
-							return [type, ...splitError(tafString, start, end)];
+    const utcDateValues = React.useMemo(
+        () => ({
+            //
+            UTCString: date.toUTCString(),
+            year: date.getUTCFullYear(),
+            month: date.getUTCMonth(),
+            day: date.getUTCDate(),
+        }),
+        [date]
+    );
+    const onChange = React.useCallback(
+        (success, error) => {
+            // sets the error state for pass and failure
+            setParserState(({ ...oldState }) => ({ ...oldState, success, error }));
+            if (!!error && !!error.location) {
+                // try {
+                const { start, end } = error.location;
+                const arrayOfStrings = (function (type) {
+                    switch (type) {
+                        case 'DateTimeError':
+                        case 'EncodingError':
+                            return [type, ...splitError(tafString, start, end)];
 
-						case 'SyntaxError':
-							return [type, ...splitError2(tafString, start.offset)];
+                        case 'SyntaxError':
+                            return [type, ...splitError2(tafString, start.offset)];
 
-						default:
-							break;
-					}
-				})(error.name);
+                        default:
+                            break;
+                    }
+                })(error.name);
 
-				setErrorString(arrayOfStrings);
-			} else {
-				setErrorString(null);
-			}
-		},
-		[tafString]
-	);
+                setErrorString(arrayOfStrings);
+                // } catch (e) {
+                //     throw new Error(error)
+                // }
+            } else {
+                setErrorString(null);
+            }
+        },
+        [tafString]
+    );
 
-	const validate = React.useMemo(() => new Validator({ isConusLocation: false }), []);
-	React.useEffect(() => {
-		try {
-			const success = tafParser.parse(tafString.toUpperCase(), {
-				...utcDateValues,
-				validate,
-			});
-			onChange(success, null);
-		} catch (e) {
-			onChange(null, e);
-		}
-	}, [tafString, date, onChange, utcDateValues, validate]);
+    const validate = React.useMemo(() => new Validator({ isConusLocation: false }), []);
+    React.useEffect(() => {
+        try {
+            const success = tafParser.parse(tafString.toUpperCase(), {
+                ...utcDateValues,
+                validate,
+            });
+            onChange(success, null);
+        } catch (e) {
+            onChange(null, e);
+        }
+    }, [tafString, date, onChange, utcDateValues, validate]);
 
-	return { success, error, tafString, setParserState, errorString };
+    return { success, error, tafString, setParserState, errorString };
 }
 // splits eeror at start of offset and end of offset uses peggy range() callback
 function splitError(tafString: string, startOfError: number, endOfError: number) {
-	const beforeError = tafString.slice(0, startOfError);
-	const theError = tafString.slice(startOfError, endOfError);
-	const afterError = tafString.slice(endOfError);
-	return [beforeError, theError, afterError];
+    const beforeError = tafString.slice(0, startOfError);
+    const theError = tafString.slice(startOfError, endOfError);
+    const afterError = tafString.slice(endOfError);
+    return [beforeError, theError, afterError];
 }
 // splits error at start of offset and the first trailing whitespace
 function splitError2(tafString: string, startOfError: number) {
-	const beforeError = tafString.slice(0, startOfError);
-	var theError = tafString.slice(startOfError);
-	var endOfError = theError.match(/(?<=.[\t\n\r ])/);
-	if (!!endOfError) {
-		theError = theError.slice(0, endOfError.index);
-		const afterError = theError.slice(endOfError.index);
-		return [beforeError, theError, afterError];
-	}
-	return [beforeError, theError];
+    const beforeError = tafString.slice(0, startOfError);
+    var theError = tafString.slice(startOfError);
+    var endOfError = theError.match(/(?<=.[\t\n\r ])/);
+    if (!!endOfError) {
+        theError = theError.slice(0, endOfError.index);
+        const afterError = theError.slice(endOfError.index);
+        return [beforeError, theError, afterError];
+    }
+    return [beforeError, theError];
 }
 
 // class Validator2 {
