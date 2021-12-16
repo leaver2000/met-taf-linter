@@ -17,17 +17,43 @@
     TX(M)TFTF/YYGFGFZ TN(M)TFTF/YYGFGFZ
 */
 RUN = ( MessageHeading PredominateLine ) (( BecomingGroup / TemporaryGroup )+)? TemperatureGroup
+
+//-----------------------|      UTC        | -------------------------------------
+
+IssuedTime "YYGGggZ" = __
+    issued:( DD HH MM ) "Z" { return getUTCDate(issued); }
+
+ValidPeriod "YYG1G1/YYG2G2"= __ 
+    start:( UTCDateHour ) 
+    "/" 
+    stop: ( UTCDateHour ) { return [start, stop] }
+
+UTCStartStop = __
+    From: ( UTCDateHour ) 
+    "/" 
+    Until: ( UTCDateHour ) {return [From, Until]}
+
+
+
+UTCDateHour = DDHH:(DD HH){return getUTCDate(DDHH)}
+
+DD = dd:([0,1,2][0-9] / [3][0,1])  {return dd.join("")}
+
+HH = hh:([0,1][0-9] / [2][1,2,3,4]) {return hh.join("") }
+
+MM = mm:([0,1,2,3,4,5,6][0-9]) { return mm.join("") }
+
 /** 
 1.3.2.1. Message Heading (TAF [AMD or COR] CCCC YYGGggZ YYG1G1/YYG2G2). 
 */
 MessageHeading = 
     head:("TAF" AMD_COR? CCCC )
-    YYGGggZ: IssuedTime
-    YYG1G1_YYG2G2: ValidPeriod {
+    YYGGggZ: ( YYGGggZ:IssuedTime { return YYGGggZ })
+    (YYG1G1_YYG2G2: ValidPeriod {
         const AMD_COR = head[1];
 		validate._YYGGggZ( YYGGggZ, ...YYG1G1_YYG2G2, { AMD_COR }, range )
         return YYG1G1_YYG2G2
-    };
+    });
 
 AMD_COR "AMD or COR; ('AMD' || 'COR')? @AFMAN 15-124 1.3.2.1.2." = __
     amd_cor:( "AMD" / "COR" ) { return amd_cor; }
@@ -36,13 +62,6 @@ CCCC "ICAO; CCCC @AFMAN 15-124 1.3.2.1.3" = __
     cccc:( [A-Z][A-Z][A-Z][A-Z] )  { 
         return cccc.join("")
         }
-
-IssuedTime "YYGGggZ" = __
-    issued:( DD HH MM ) "Z" { return getUTCDate(issued); }
-
-ValidPeriod "YYG1G1/YYG2G2"= __ 
-    start:( UTCDateHour ) "/" stop: ( UTCDateHour ) { return [start, stop]; }
-
 /** 
 1.3.3.1. Becoming (BECMG)—The change-indicator group TTTTT YYGG/YYGeGe
 */ 
@@ -72,8 +91,12 @@ PredominateLine =
     })
 	va:VolcanicAshGroup? 
 	llws:LowLevelWindShearGroup? 
-	ice:IcingGroup? 
-	turb:TurbulenceGroup? 
+	ice:(ice:IcingGroup? {
+        return ice
+    })
+	turb:(turb:TurbulenceGroup? { 
+        return turb
+        })
 	altsg:LowestAltimeterGroup
 
 /**
@@ -170,10 +193,8 @@ ZZ = [0][0]
 1.3.7. Cloud and Obscuration Group (NsNsNshshshsCC).
 Report as often as necessary to indicate all forecast cloud layers up to the first overcast layer.
 Arrange groups in ascending order of cloud bases AGL (e.g., lowest base first). (T-0)
-
 */
 CloudObscurationGroup = NNNhhh:( SKC / VerticalVisibility / CloudAmount ) {
-    
     return NNNhhh.filter(f=>f)
     }
 
@@ -215,9 +236,6 @@ CB = cb:"CB"{return !!cb}
 
 CloudBase = base:( [0,1,2][0-9][0-9] / [3][0-9][0] ){return Number(base.join("")*100) }
 
-
-
-
 /** 
 1.3.9. Operationally significant/Hazardous weather Groups. 
 Volcanic ash and wind shear arepotentially hazardous problems for aircraft.
@@ -227,10 +245,11 @@ to focus the attention of the pilot on existing or expected problems
 //** ------------------------|   (VAbbbttt)   |------------------------------------    
 VolcanicAshGroup "Volcanic Ash (VA) Group; (VAbbbttt) @AFMAN 15-124 1.3.9.2." = __
     "VA" 
-
-//** -----|  1.3.9.2. Non-Convective Low-Level Wind Shear Group (WShxhxhx/dddfffKT)  |--------------
-//Use this group only to forecast wind shear not associated with convective 
-//activity from the surface up to and including 2,000 feet AGL
+/**
+1.3.9.2. Non-Convective Low-Level Wind Shear Group (WShxhxhx/dddfffKT)
+Use this group only to forecast wind shear not associated with convective 
+activity from the surface up to and including 2,000 feet AGL
+*/
 LowLevelWindShearGroup "Non-Convective Low-Level Wind Shear Group; (WShxhxhx/dddfffKT) @AFMAN 15-124 1.3.9.2." = __
     "WS" 
     hxhxhx:([0]([0,1][0-9]/[2][0])) "/" 
@@ -239,27 +258,32 @@ LowLevelWindShearGroup "Non-Convective Low-Level Wind Shear Group; (WShxhxhx/ddd
         return ["WS",height, ddd, Number(ff.join(""))]//getRange(["WS",height, ddd, Number(ff.join(""))])
     }
 
-//-------------|1.3.10. Icing Group && 1.3.11. Turbulence Group ---------
-// Forecast icing group used to forecast icing not associated
-// with thunderstorms (thunderstorm forecasts imply moderate or greater icing). Repeat as
-// necessary to indicate multiple icing layers. Omit when no icing is forecast. Format icing
-// groups as: Forecast turbulence group used only to forecast
-// turbulence not associated with a thunderstorm (thunderstorms already imply severe or extreme
-// turbulence). Turbulence forecasts apply to category II (CAT II) aircraft. 
-
-//-------------|(6IchihihitL)  |---------
+/**
+Forecast icing group used to forecast icing not associated
+with thunderstorms (thunderstorm forecasts imply moderate or greater icing). Repeat as
+necessary to indicate multiple icing layers. Omit when no icing is forecast. Format icing
+groups as: Forecast turbulence group used only to forecast
+turbulence not associated with a thunderstorm (thunderstorms already imply severe or extreme
+turbulence). Turbulence forecasts apply to category II (CAT II) aircraft. 
+*/
+//-------------|   1.3.10. (6IchihihitL)  |---------
 IcingGroup "Icing Group; (6IchihihitL) @AFMAN 15-124 1.3.10." = __ 
-    icing:( [6][0-9] BaseHeight Thickness) {return icing}//getRange(icing)}
+    icing:( [6 ]Intensity BaseHeight Thickness) {return icing}//getRange(icing)}
 
-//-------------| (5BhBhBhBtL) |-------
+//-------------|  1.3.11. (5BhBhBhBtL) |-------
 TurbulenceGroup "Turbulence group; (5BhBhBhBtL) @AFMAN 15-124 1.3.11." = __ 
-    turb:([5][0-9]BaseHeight Thickness) {return turb}//getRange(turb)}
+    turb:([5] Intensity BaseHeight Thickness) {return turb}//getRange(turb)}
+
+//	Intensity
+Intensity = I:[0-9] {return Number(I)}
+
 //	BASE HEIGHT
-BaseHeight = bH:(([0]([0][0-9] / [1][0,1] /[9][9])) / ([1][0,1,2][0]))   { return bH.flat().join("")*100 }
+BaseHeight = bH:(([0]([0][0-9] / [1][0,1] /[9][9])) / ([1][0,1,2][0]))   { 
+    return Number(bH.flat().join("")*100) 
+    }
+
 //	THICKNESS
 Thickness = tL:([0-9]){return Number(tL)*1000}
-
-
 
 //** ----------------------| WX |----------------------
 //  "\
@@ -276,37 +300,19 @@ WeatherGroup =
         Other?
 
 
-
+FunnelCloud = __
+    ww: (("+")? "FC") {
+        return ww.join("")
+        };
 /////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////// 1.) DESCRIPTORS ///////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////
-Vicinity = __ 
-    ww:("VC" ("TS" / "SH" / "FG" / ("BL" ("SN" / "DU" / "SA")) / "PO" / "SS" / "DS" )){return ww.flat().join("")}//getRange(ww.flat().join(""))};
-
-// Intensity = (LGT/HVY)?
-// HVY = "+"
-// LGT = "-"
-
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////// 2.) DESCRIPTORS ///////////////////////////////////////
+////////////////////////////////////) PRECIPITATION ////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-// MI "Shallow" = "MI" 
-// PR "Partial (covering part of the aerodrome)" = "PR"
-// SH "Shower(s)" = "SH"
-// TS "Thunderstorm" = "TS"
-// FZ "Freezing" = "FZ"
-// BL "Blowing"  = "BL"
-
-/////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////// 3.) PRECIPITATION /////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////////////////
 Precipitation = __ 
-    ww:(( "+" / "-" )? ( ThunderStorms / SnowPellets / Snow / Drizzle / Rain  ) ) { return ww.join("") };
+    ww:(( "+" / "-" )? ( ThunderStorms / SnowPellets / Snow / Drizzle / Rain  ) ) { 
+        return ww.join("") 
+        };
 
-/////////////////////////////////////////////////////////////////////////////////////////////v 
 
 ThunderStorms =
     ww:("TS" ("RA" / "SN")? ("GR")?){return ww.join("")};
@@ -323,18 +329,9 @@ Rain =
 Drizzle = 
     ww:(("FZ")? "DZ"){return ww.join("")};
 
-/////////////////////////////////////////////////////////////////////////////////////////////
-
-// DZ "Drizzle" = "DZ"
-// SN "Snow" = "SN"
-// SG "Snow Grains" = "SG"
-// IC "Ice Crystals (Diamond Dust)" = "IC"
-// PL "Ice Pellets" = "PL"
-// GR "Hail" = "GR"
-// GS "Snow Pellets " = "GS"
 
 /////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////// 4.) OBSCURATIONS //////////////////////////////////////
+//////////////////////////////////// OBSCURATIONS //////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
 Obscuration = __ 
     ww:( Mist / Fog / Smoke / VolcanicAsh / Dust / Sand / Haze / Spray ){return ww};
@@ -364,12 +361,40 @@ Haze = "HZ"
 // HZ = "HZ"
 // PY = "PY"
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// 1.) Vicinity ///////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+Vicinity = __ 
+    ww:("VC" ("TS" / "SH" / "FG" / ("BL" ("SN" / "DU" / "SA")) / "PO" / "SS" / "DS" )){return ww.flat().join("")}//getRange(ww.flat().join(""))};
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// 2.) DESCRIPTORS ///////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////
+
+// MI "Shallow" = "MI" 
+// PR "Partial (covering part of the aerodrome)" = "PR"
+// SH "Shower(s)" = "SH"
+// TS "Thunderstorm" = "TS"
+// FZ "Freezing" = "FZ"
+// BL "Blowing"  = "BL"
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+// DZ "Drizzle" = "DZ"
+// SN "Snow" = "SN"
+// SG "Snow Grains" = "SG"
+// IC "Ice Crystals (Diamond Dust)" = "IC"
+// PL "Ice Pellets" = "PL"
+// GR "Hail" = "GR"
+// GS "Snow Pellets " = "GS"
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////// 5.) OTHER /////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////
-FunnelCloud = __
-    ww: (("+")? "FC") {return ww};
+
 
 Other = __
     ww:( "SQ" / "PO" / "SS" / "DS" ){return ww};
@@ -405,20 +430,6 @@ Temperature =
         if(!!minus) tt = ['-',...temp]
         return Number(tt.join(""))
      }
-
-//-----------------------|      UTC        | -------------------------------------
-
-UTCStartStop = __
-    start: ( UTCDateHour ) "/" 
-    end: ( UTCDateHour ) {return [start, end]}
-
-UTCDateHour = DDHH:(DD HH){return getUTCDate(DDHH)}
- 
-DD = dd:([0,1,2][0-9] / [3][0,1])  {return dd.join("")}
-
-HH = hh:([0,1][0-9] / [2][1,2,3,4]) {return hh.join("") }
-
-MM = mm:([0,1,2,3,4,5,6][0-9]) { return mm.join("") }
 
 //** --------------------------| Indicators |----------------------------------
 //Single Whitespace

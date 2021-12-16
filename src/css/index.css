@@ -69,91 +69,11 @@ pre[class*='language-'] {
 	background: black; /* - WebCoder49 */
 }
 
-/* code[class*='language-'] {
-	background: black;
-	color: white;
-	box-shadow: -0.3em 0 0 0.3em black, 0.3em 0 0 0.3em black;
-} */
 .taf-string {
 	background: transparent;
 	color: white;
 	box-shadow: -0.3em 0 0 0.3em black, 0.3em 0 0 0.3em black;
 }
-/* Inline code */
-/* :not(pre) > code[class*='language-'] {
-	padding: 0.2em;
-	border-radius: 0.3em;
-	box-shadow: none;
-	white-space: normal;
-} */
-/* 
-.token.comment,
-.token.prolog,
-.token.doctype,
-.token.cdata {
-	color: #aaa;
-}
-
-.token.punctuation {
-	color: #999;
-}
-
-.token.namespace {
-	opacity: 0.7;
-}
-
-.token.property,
-.token.tag,
-.token.boolean,
-.token.number,
-.token.constant,
-.token.symbol {
-	color: #0cf;
-}
-
-.token.selector,
-.token.attr-name,
-.token.string,
-.token.char,
-.token.builtin {
-	color: yellow;
-}
-
-.token.operator,
-.token.entity,
-.token.url,
-.language-css .token.string,
-.token.variable,
-.token.inserted {
-	color: yellowgreen;
-}
-
-.token.atrule,
-.token.attr-value,
-.token.keyword {
-	color: deeppink;
-}
-
-.token.regex,
-.token.important {
-	color: orange;
-}
-
-.token.important,
-.token.bold {
-	font-weight: bold;
-}
-.token.italic {
-	font-style: italic;
-}
-
-.token.entity {
-	cursor: help;
-}
-
-.token.deleted {
-	color: red;
-} */
 
 /* Plugin styles: Diff Highlight */
 pre.diff-highlight.diff-highlight > code .token.deleted:not(.prefix),

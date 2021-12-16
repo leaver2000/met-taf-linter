@@ -41,11 +41,10 @@ const errorStyles = (errorName: string) => {
 			return { color: 'blue' };
 	}
 };
-const ValueError: React.FC<{ errorValue: [string, string, string, string] }> = ({ errorValue: [errorName, beforeTheError, theError, afterTheError] }) => {
+
+const ValueError = ({ errorValue: [errorName, beforeTheError, theError, afterTheError] }) => {
 	const [showDisplay, setShowDisplay] = React.useState(false);
-	// const [errorName, beforeTheError, theError, afterTheError]: string[] = errorValue;
 	const { color } = React.useMemo(() => errorStyles(errorName), [errorName]);
-	// console.log(color);
 	return (
 		<pre style={{ ...ErrorStyle, zIndex: 1 }}>
 			{beforeTheError}

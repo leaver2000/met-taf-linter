@@ -58,6 +58,11 @@ export function Linter() {
 		</div>
 	);
 }
+
+// function E2({errorOverlay,...props}){
+// 	return <div style={{ position: 'relative', width: 800, height: 200, border: `solid ${!!errorOverlay ? 'red' : 'green'}`, backgroundColor: 'grey', ...font }} {...props}>
+// }
+
 // interface KeyboardEvent<T = Element> extends React.SyntheticEvent<T, NativeKeyboardEvent> {
 // 	altKey: boolean;
 // 	/** @deprecated */
